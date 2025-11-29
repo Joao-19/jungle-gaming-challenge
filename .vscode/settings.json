@@ -1,0 +1,9 @@
+{
+    "errorLens.codeLensEnabled": true,
+    "errorLens.gutterIconsEnabled": true,
+    "errorLens.editorHoverPartsEnabled": {
+        "messageEnabled": true,
+        "sourceCodeEnabled": true,
+        "buttonsEnabled": true
+    }
+}
