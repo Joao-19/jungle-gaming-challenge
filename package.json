@@ -1,5 +1,5 @@
 {
-  "name": "turboRepo",
+  "name": "Desafio-Full-stack-J-nior-Sistema-de-Gest-o-de-Tarefas-Colaborativo",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -13,12 +13,8 @@
     "turbo": "^2.6.1",
     "typescript": "5.9.2"
   },
+  "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=18"
-  },
-  "packageManager": "npm@11.3.0",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ]
+  }
 }
