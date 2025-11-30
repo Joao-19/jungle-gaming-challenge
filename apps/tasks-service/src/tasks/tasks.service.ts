@@ -35,7 +35,7 @@ export class TasksService {
   }
 
   findAll() {
-    return `This action returns all tasks`;
+    return this.tasksRepository.find();
   }
 
   findOne(id: number) {

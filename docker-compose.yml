@@ -1,5 +1,7 @@
 services:
-  # Postgres Database
+  # ----------------------------------------------------------------
+  # INFRAESTRUTURA (Banco e Fila)
+  # ----------------------------------------------------------------
   db:
     image: postgres:17.5-alpine3.21
     container_name: db
@@ -12,23 +14,125 @@ services:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: postgres
       POSTGRES_DB: challenge_db
+    networks:
+      - jungle-network
 
-  # RabbitMQ
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
     container_name: rabbitmq
     restart: always
     ports:
-      - '5672:5672'    # Porta de comunicação dos serviços
-      - '15672:15672'  # Painel de Admin (UI)
+      - '5672:5672'
+      - '15672:15672'
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - jungle-network
+
+  # ----------------------------------------------------------------
+  # BACKEND SERVICES
+  # ----------------------------------------------------------------
+  auth-service:
+    build:
+      context: . # Contexto é a raiz para pegar o pnpm-lock.yaml
+      dockerfile: apps/auth-service/Dockerfile
+    container_name: auth-service
+    ports:
+      - '3002:3002'
+    depends_on:
+      - db
+    environment:
+      # Sobrescreve o .env local para usar a rede interna do Docker
+      POSTGRES_HOST: db 
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: challenge_db
+      JWT_SECRET: super-secret-key-mudar-depois
+    networks:
+      - jungle-network
+
+  tasks-service:
+    build:
+      context: .
+      dockerfile: apps/tasks-service/Dockerfile
+    container_name: tasks-service
+    ports:
+      - '3003:3003'
+    depends_on:
+      - db
+      - rabbitmq
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: challenge_db
+      # Atenção: aqui usamos 'rabbitmq' (nome do service), não localhost
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+    networks:
+      - jungle-network
+
+  notifications-service:
+    build:
+      context: .
+      dockerfile: apps/notifications-service/Dockerfile
+    container_name: notifications-service
+    ports:
+      - '3004:3004'
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+    networks:
+      - jungle-network
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    container_name: api-gateway
+    ports:
+      - '3001:3001'
+    depends_on:
+      - auth-service
+      - tasks-service
+    environment:
+      # O Gateway chama os serviços pelos nomes de container
+      AUTH_SERVICE_URL: http://auth-service:3002
+      TASKS_SERVICE_URL: http://tasks-service:3003
+      JWT_SECRET: super-secret-key-mudar-depois
+      CORS_ORIGIN: http://localhost:5173
+      PORT: 3001
+    networks:
+      - jungle-network
+
+  # ----------------------------------------------------------------
+  # FRONTEND
+  # ----------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: web
+    ports:
+      - '5173:5173'
+    environment:
+      # O Frontend roda no navegador do cliente, então ele continua chamando localhost
+      # mas expomos isso aqui caso precise buildar
+      VITE_API_URL: http://localhost:3001
+    networks:
+      - jungle-network
 
 volumes:
   postgres_data:
     driver: local
   rabbitmq_data:
     driver: local
+
+networks:
+  jungle-network:
+    driver: bridge

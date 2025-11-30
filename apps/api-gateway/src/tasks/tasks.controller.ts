@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, Request } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Request, Get } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { AuthGuard } from '@nestjs/passport'; // O guardião padrão do JWT
 
@@ -13,5 +13,12 @@ export class TasksController {
     const userId = req.user.userId;
 
     return this.tasksService.createTask(body, userId);
+  }
+
+  // 👇 ADICIONE ESTA ROTA NOVA
+  @UseGuards(AuthGuard('jwt')) // Protegido por Token também
+  @Get()
+  findAll() {
+    return this.tasksService.findAll();
   }
 }
