@@ -13,9 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  // O Nest roda isso se o token for válido
   async validate(payload: any) {
-    // Retorna os dados que estarão disponíveis em "req.user"
     return { userId: payload.sub, email: payload.email, username: payload.username };
   }
 }
