@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState } from 'react';
 
 export interface AuthContextType {
   isAuthenticated: boolean;
   token: string | null;
   userId: string | null;
-  login: (token: string, userId: string) => void;
+  login: (token: string, refreshToken: string, userId: string) => void;
   logout: () => void;
 }
 
@@ -14,12 +14,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Inicializa lendo do localStorage para manter logado ao recarregar a página
   const [token, setToken] = useState<string | null>(localStorage.getItem('auth_token'));
   const [userId, setUserId] = useState<string | null>(localStorage.getItem('user_id'));
-  
+
   const isAuthenticated = !!token;
 
-  const login = (newToken: string, newUserId: string) => {
+  const login = (newToken: string, newRefreshToken: string, newUserId: string) => {
     localStorage.setItem('auth_token', newToken);
-    localStorage.setItem('user_id', newUserId); // Guardamos o ID para usar no WebSocket depois
+    localStorage.setItem('refresh_token', newRefreshToken); // <--- Salva aqui
+    localStorage.setItem('user_id', newUserId);
     setToken(newToken);
     setUserId(newUserId);
   };

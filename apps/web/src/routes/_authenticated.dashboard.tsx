@@ -9,7 +9,6 @@ export const Route = createFileRoute('/_authenticated/dashboard')({
 });
 
 function Dashboard() {
-  // Busca as tarefas do Backend
   const { data: tasks, isLoading, isError } = useQuery({
     queryKey: ['tasks'],
     queryFn: async () => {
@@ -30,9 +29,9 @@ function Dashboard() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {tasks?.length === 0 && (
-           <p className="text-muted-foreground col-span-3 text-center py-10">
-             Nenhuma tarefa encontrada. Crie a primeira!
-           </p>
+          <p className="text-muted-foreground col-span-3 text-center py-10">
+            Nenhuma tarefa encontrada. Crie a primeira!
+          </p>
         )}
 
         {tasks?.map((task: any) => (
@@ -41,10 +40,9 @@ function Dashboard() {
               <CardTitle className="text-sm font-medium">
                 {task.title}
               </CardTitle>
-              <div className={`w-3 h-3 rounded-full ${
-                task.priority === 'HIGH' ? 'bg-red-500' : 
-                task.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
-              }`} />
+              <div className={`w-3 h-3 rounded-full ${task.priority === 'HIGH' ? 'bg-red-500' :
+                  task.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
+                }`} />
             </CardHeader>
             <CardContent>
               <div className="text-xs text-muted-foreground mb-2">{task.status}</div>

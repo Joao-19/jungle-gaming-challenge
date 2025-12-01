@@ -2,8 +2,7 @@ import * as bcrypt from 'bcrypt';
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto, UserResponseDto } from '@repo/dtos';
 import { User } from './entities/user.entity';
 
 @Injectable()
@@ -13,14 +12,16 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  async create(createUserDto: CreateUserDto) {
+  async create(createUserDto: CreateUserDto): Promise<UserResponseDto> {
     const existingUser = await this.usersRepository.findOne({
-      where: [{ email: createUserDto.email }, { username: createUserDto.username }],
+      where: [
+        { email: createUserDto.email },
+        { username: createUserDto.username },
+      ],
     });
-
-    if (existingUser) {
+    if (existingUser)
       throw new ConflictException('Email ou Username já estão em uso.');
-    }
+
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createUserDto.password, salt);
     const newUser = this.usersRepository.create({
@@ -28,31 +29,30 @@ export class UsersService {
       password: hashedPassword,
     });
 
-    return this.usersRepository.save(newUser);
+    const user = await this.usersRepository.save(newUser);
+
+    return new UserResponseDto(user);
   }
 
   findAll() {
     return this.usersRepository.find();
   }
 
-  findOne(id: string) {
-    return this.usersRepository.findOneBy({ id });
+  findOne(form: { id?: string; email?: string }) {
+    return this.usersRepository.findOne({ where: form });
   }
-  
-  update(id: string, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+
+  update(id: string, updateUserDto: Partial<User>) {
+    return this.usersRepository.update(id, updateUserDto);
   }
 
   remove(id: string) {
-    return `This action removes a #${id} user`;
+    return this.usersRepository.delete(id);
   }
 
   async validateUser(email: string, pass: string): Promise<User | null> {
-  const user = await this.usersRepository.findOne({ where: { email } });
-  if (user && await bcrypt.compare(pass, user.password)) {
-    return user;
-    return user; 
+    const user = await this.usersRepository.findOne({ where: { email } });
+    if (user && (await bcrypt.compare(pass, user.password))) return user;
+    return null;
   }
-  return null;
-}
 }

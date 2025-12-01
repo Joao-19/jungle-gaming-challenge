@@ -34,7 +34,7 @@ function AuthenticatedLayout() {
     // 3. Ouve o evento que definimos no Backend
     socket.on('notification', (data: any) => {
       console.log('🔔 Notificação recebida:', data);
-      
+
       // 4. Mostra o Toast bonitão do Shadcn
       toast({
         title: "Nova Atualização",
@@ -54,12 +54,12 @@ function AuthenticatedLayout() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-slate-50">
       <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-6 shadow-sm">
-        <h1 className="font-bold text-lg text-primary">Jungle Task Manager</h1>
+        <h1 className="font-bold text-lg text-primary">Task Manager</h1>
         <div className="ml-auto text-sm text-slate-500">
-           ID: {userId?.slice(0, 8)}...
+          ID: {userId?.slice(0, 8)}...
         </div>
       </header>
-      
+
       <main className="flex-1 p-6">
         <Outlet />
       </main>

@@ -1,9 +1,8 @@
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router';
 import { Toaster } from '@/components/ui/toaster';
 import type { AuthContextType } from '@/context/auth-context';
-// Certifique-se de exportar essa interface no context
+import { Button } from '@/components/ui/button';
 
-// 1. Definimos o contrato: O Router PRECISA receber o 'auth'
 interface MyRouterContext {
   auth: AuthContextType;
 }
@@ -11,14 +10,31 @@ interface MyRouterContext {
 export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
     <>
-      {/* O Outlet é onde as páginas (Login, Dashboard) aparecem */}
+      {/* O router joga as telas aqui */}
       <Outlet />
-      
-      {/* O Toaster fica aqui para funcionar em qualquer página */}
+
+      {/* O Toaster fica aqui para funcionar em qualquer página, pode colocar um popUp aqui tbm, ai fica a nivel global, por cima de geral*/}
       <Toaster />
-      
-      {/* (Opcional) Ferramentas de Debug do Router - Apenas em Dev */}
-      {/* <TanStackRouterDevtools /> */}
     </>
   ),
+  notFoundComponent: () => {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-slate-50 gap-4">
+        <h1 className="text-4xl font-bold text-slate-900">404</h1>
+        <p className="text-slate-600 text-lg">Ops! Essa página não existe na selva.</p>
+
+        <div className="flex gap-2">
+
+          <Link to="/dashboard">
+            <Button>Voltar para o Início</Button>
+          </Link>
+
+          <Button variant="outline" onClick={() => window.history.back()}>
+            Voltar
+          </Button>
+
+        </div>
+      </div>
+    );
+  },
 });

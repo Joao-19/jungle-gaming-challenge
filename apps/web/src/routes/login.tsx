@@ -1,14 +1,13 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast'; // Hook do Shadcn para notificações
+import { useToast } from '@/hooks/use-toast';
 
-// Define a rota '/login'
 export const Route = createFileRoute('/login')({
   component: LoginPage,
 });
@@ -17,35 +16,31 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const { login } = useAuth();
+
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate({ to: '/dashboard' });
+    }
+  }, [isAuthenticated]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Chama o Gateway
       const res = await api.post('/auth/login', { email, password });
-      
-      // Decodifica o payload do JWT para pegar o ID do usuário (truque simples)
-      // O token vem no formato "header.payload.signature"
-      const payloadBase64 = res.data.access_token.split('.')[1];
+      const payloadBase64 = res.data.accessToken.split('.')[1];
       const payload = JSON.parse(atob(payloadBase64));
-      
-      // Salva no contexto
-      login(res.data.access_token, payload.sub);
-      
+
+      login(res.data.accessToken, res.data.refreshToken, payload.sub);
       toast({
         title: "Sucesso!",
         description: "Login realizado com sucesso.",
       });
-
-      // Redireciona para o Dashboard
-      navigate({ to: '/dashboard' });
-      
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -68,9 +63,9 @@ function LoginPage() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
+              <Input
+                id="email"
+                type="email"
                 placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -79,8 +74,8 @@ function LoginPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Senha</Label>
-              <Input 
-                id="password" 
+              <Input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}

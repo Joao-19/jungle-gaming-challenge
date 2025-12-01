@@ -1,9 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'users' }) // Define o nome da tabela no banco
 export class User {
   @PrimaryGeneratedColumn('uuid') // ID único universal (melhor que números sequenciais)
   id: string;
+
+  @Column({ nullable: true })
+  currentRefreshToken: string;
 
   @Column({ unique: true })
   username: string;

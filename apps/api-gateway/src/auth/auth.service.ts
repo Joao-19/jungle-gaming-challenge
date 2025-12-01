@@ -2,6 +2,12 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
+import {
+  CreateUserDto,
+  LoginDto,
+  LoginResponseDto,
+  UserResponseDto,
+} from '@repo/dtos';
 
 @Injectable()
 export class AuthService {
@@ -16,10 +22,15 @@ export class AuthService {
       'http://localhost:3002';
   }
 
-  async login(body: any) {
+  // in a complete project is interesting to type an error and succes response, pessoal recomendation, Result.ts lib, is a good choice
+
+  async login(body: LoginDto): Promise<LoginResponseDto> {
     try {
       const response = await lastValueFrom(
-        this.httpService.post(`${this.AUTH_SERVICE_URL}/auth/login`, body),
+        this.httpService.post<LoginResponseDto>(
+          `${this.AUTH_SERVICE_URL}/auth/login`,
+          body,
+        ),
       );
       return response.data;
     } catch (error) {
@@ -30,13 +41,39 @@ export class AuthService {
     }
   }
 
-  async register(body: any) {
+  async register(body: CreateUserDto): Promise<UserResponseDto> {
     try {
       const response = await lastValueFrom(
-        this.httpService.post(`${this.AUTH_SERVICE_URL}/users`, body),
+        this.httpService.post<UserResponseDto>(
+          `${this.AUTH_SERVICE_URL}/users`,
+          body,
+        ),
       );
       return response.data;
     } catch (error) {
+      throw new HttpException(
+        error.response?.data || 'Erro ao conectar no Auth Service',
+        error.response?.status || 500,
+      );
+    }
+  }
+
+  async refresh(refreshToken: string) {
+    try {
+      const url = `${this.AUTH_SERVICE_URL}/auth/refresh`;
+      // Passar o token no header Authorization
+      const response = await lastValueFrom(
+        this.httpService.post(
+          url,
+          {},
+          {
+            headers: { Authorization: `Bearer ${refreshToken}` },
+          },
+        ),
+      );
+      return response.data;
+    } catch (error) {
+      console.log(error);
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,

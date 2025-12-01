@@ -71,7 +71,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: challenge_db
-      # Atenção: aqui usamos 'rabbitmq' (nome do service), não localhost
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     networks:
       - jungle-network
