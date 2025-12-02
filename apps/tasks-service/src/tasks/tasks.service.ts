@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   CreateTaskDto,
@@ -31,8 +31,6 @@ export class TasksService {
 
     const savedTask = await this.tasksRepository.save(task);
 
-    // 🔥 AQUI ACONTECE A MÁGICA
-    // Emitimos um evento 'task_created' com os dados da tarefa
     this.client.emit('task_created', savedTask);
 
     return savedTask;
@@ -46,10 +44,14 @@ export class TasksService {
     return this.tasksRepository.findOne({ where: { id } });
   }
 
-  async update(id: string, updateTaskDto: UpdateTaskDto) {
+  async update(id: string, updateTaskDto: UpdateTaskDto, userId: string) {
     const task = await this.tasksRepository.findOne({ where: { id } });
     if (!task) {
       throw new Error('Task not found');
+    }
+
+    if (task.userId !== userId) {
+      throw new ForbiddenException('You are not allowed to update this task');
     }
 
     // Atualiza os campos
@@ -63,7 +65,16 @@ export class TasksService {
     return updatedTask;
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
+    const task = await this.tasksRepository.findOne({ where: { id } });
+    if (!task) {
+      throw new Error('Task not found');
+    }
+
+    if (task.userId !== userId) {
+      throw new ForbiddenException('You are not allowed to delete this task');
+    }
+
     return this.tasksRepository.delete(id);
   }
 }

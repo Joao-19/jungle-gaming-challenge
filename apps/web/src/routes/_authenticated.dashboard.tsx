@@ -67,10 +67,10 @@ function Dashboard() {
               </CardTitle>
               <div
                 className={`w-3 h-3 rounded-full ${task.priority === 'HIGH'
-                    ? 'bg-red-500'
-                    : task.priority === 'MEDIUM'
-                      ? 'bg-yellow-500'
-                      : 'bg-green-500'
+                  ? 'bg-red-500'
+                  : task.priority === 'MEDIUM'
+                    ? 'bg-yellow-500'
+                    : 'bg-green-500'
                   }`}
               />
             </CardHeader>
@@ -89,19 +89,19 @@ function Dashboard() {
                     task.assigneeIds.slice(0, 3).map((id: string) => (
                       <div
                         key={id}
-                        className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-200 flex items-center justify-center"
+                        className="h-6 w-6 rounded-full ring-2 ring-white bg-gray-200 flex items-center justify-center"
                         title="Usuário atribuído"
                       >
                         <User className="h-3 w-3 text-gray-500" />
                       </div>
                     ))
                   ) : (
-                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center">
+                    <div className="h-6 w-6 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center">
                       <User className="h-3 w-3 text-gray-300" />
                     </div>
                   )}
                   {task.assigneeIds && task.assigneeIds.length > 3 && (
-                    <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-500">
+                    <div className="h-6 w-6 rounded-full ring-2 ring-white bg-gray-100 flex items-center justify-center text-[10px] font-medium text-gray-500">
                       +{task.assigneeIds.length - 3}
                     </div>
                   )}

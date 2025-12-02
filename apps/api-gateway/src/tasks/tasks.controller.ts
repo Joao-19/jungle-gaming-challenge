@@ -70,8 +70,13 @@ export class TasksController {
     description: 'Tarefa atualizada.',
     type: TaskResponseDto,
   })
-  update(@Param('id') id: string, @Body() body: UpdateTaskDto) {
-    return this.tasksService.update(id, body);
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateTaskDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.tasksService.update(id, body, userId);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -81,7 +86,8 @@ export class TasksController {
     status: 200,
     description: 'Tarefa removida.',
   })
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(id);
+  remove(@Param('id') id: string, @Request() req: any) {
+    const userId = req.user.userId;
+    return this.tasksService.remove(id, userId);
   }
 }

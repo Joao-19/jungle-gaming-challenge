@@ -1,4 +1,9 @@
-import { WebSocketGateway, WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
@@ -6,7 +11,9 @@ import { Server, Socket } from 'socket.io';
     origin: '*', // Permite que o Frontend (porta 5173) conecte aqui
   },
 })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class NotificationsGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
 
@@ -17,7 +24,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   handleConnection(client: Socket) {
     // O Frontend vai mandar o userId na query: ws://localhost:3004?userId=123
     const userId = client.handshake.query.userId as string;
-    
+
     if (userId) {
       this.userSockets.set(userId, client.id);
       console.log(`Cliente conectado: ${client.id} (User: ${userId})`);
@@ -26,9 +33,10 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
 
   handleDisconnect(client: Socket) {
     // Remove do mapa quando desconectar
-    const userId = [...this.userSockets.entries()]
-      .find(([_, socketId]) => socketId === client.id)?.[0];
-      
+    const userId = [...this.userSockets.entries()].find(
+      ([_, socketId]) => socketId === client.id,
+    )?.[0];
+
     if (userId) {
       this.userSockets.delete(userId);
       console.log(`Cliente desconectado: ${client.id}`);
@@ -38,7 +46,7 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   // Método que será chamado quando chegar mensagem do RabbitMQ
   notifyUser(userId: string, payload: any) {
     const socketId = this.userSockets.get(userId);
-    
+
     if (socketId) {
       // Envia APENAS para o socket deste usuário específico
       this.server.to(socketId).emit('notification', payload);
@@ -46,5 +54,11 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
     } else {
       console.log(`Usuário ${userId} não está conectado no WebSocket agora.`);
     }
+  }
+
+  notifyUsers(userIds: string[], payload: any) {
+    userIds.forEach((userId) => {
+      this.notifyUser(userId, payload);
+    });
   }
 }

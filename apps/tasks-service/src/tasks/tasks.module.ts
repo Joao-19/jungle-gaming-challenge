@@ -14,7 +14,9 @@ import { ClientsModule, Transport } from '@nestjs/microservices'; // Importe
         name: 'NOTIFICATIONS_SERVICE', // O nome que usaremos para injetar no Service
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://admin:admin@localhost:5672'], // Credenciais do docker-compose
+          urls: [
+            process.env.RABBITMQ_URL || 'amqp://admin:admin@localhost:5672',
+          ], // Credenciais do docker-compose
           queue: 'notifications_queue', // Nome da fila onde as mensagens vão cair
           queueOptions: {
             durable: false, // Em produção seria true, para teste false é mais rápido

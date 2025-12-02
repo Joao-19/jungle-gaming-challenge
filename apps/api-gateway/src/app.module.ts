@@ -11,7 +11,6 @@ import { UsersModule } from './users/users.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-
     AuthModule,
     TasksModule,
     UsersModule,

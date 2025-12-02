@@ -59,10 +59,11 @@ export class TasksService {
     }
   }
 
-  async update(id: string, data: any) {
+  async update(id: string, data: any, userId: string) {
     try {
+      const payload = { ...data, userId };
       const response = await lastValueFrom(
-        this.httpService.patch(`${this.tasksServiceUrl}/tasks/${id}`, data),
+        this.httpService.patch(`${this.tasksServiceUrl}/tasks/${id}`, payload),
       );
       return response.data;
     } catch (error) {
@@ -73,10 +74,12 @@ export class TasksService {
     }
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
     try {
       const response = await lastValueFrom(
-        this.httpService.delete(`${this.tasksServiceUrl}/tasks/${id}`),
+        this.httpService.delete(`${this.tasksServiceUrl}/tasks/${id}`, {
+          params: { userId },
+        }),
       );
       return response.data;
     } catch (error) {
