@@ -42,6 +42,7 @@ interface TaskDetailsDialogProps {
     task: Task | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onUpdate?: () => void;
 }
 
 const updateTaskSchema = z.object({
@@ -59,6 +60,7 @@ export function TaskDetailsDialog({
     task,
     open,
     onOpenChange,
+    onUpdate,
 }: TaskDetailsDialogProps) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
@@ -107,6 +109,9 @@ export function TaskDetailsDialog({
             });
 
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            if (onUpdate) {
+                onUpdate();
+            }
         } catch (error) {
             console.error(error);
             toast({

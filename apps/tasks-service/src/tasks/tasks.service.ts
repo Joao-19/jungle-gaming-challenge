@@ -3,6 +3,7 @@ import { ClientProxy } from '@nestjs/microservices';
 import {
   CreateTaskDto,
   UpdateTaskDto,
+  GetTasksFilterDto,
   TaskStatus,
   TaskPriority,
 } from '@repo/dtos';
@@ -36,8 +37,55 @@ export class TasksService {
     return savedTask;
   }
 
-  findAll() {
-    return this.tasksRepository.find();
+  async findAll(filters: GetTasksFilterDto) {
+    const {
+      title,
+      status,
+      priority,
+      assigneeId,
+      dueDate,
+      page = 1,
+      limit = 10,
+    } = filters;
+    const query = this.tasksRepository.createQueryBuilder('task');
+
+    if (title) {
+      query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
+    }
+
+    if (status) {
+      query.andWhere('task.status = :status', { status });
+    }
+
+    if (priority) {
+      query.andWhere('task.priority = :priority', { priority });
+    }
+
+    if (assigneeId) {
+      // Como assigneeIds é um simple-array, usamos LIKE para buscar
+      query.andWhere('task.assigneeIds LIKE :assigneeId', {
+        assigneeId: `%${assigneeId}%`,
+      });
+    }
+
+    if (dueDate) {
+      query.andWhere('DATE(task.dueDate) = DATE(:dueDate)', { dueDate });
+    }
+
+    query.skip((page - 1) * limit).take(limit);
+    query.orderBy('task.createdAt', 'DESC');
+
+    const [items, total] = await query.getManyAndCount();
+
+    return {
+      data: items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   findOne(id: string) {

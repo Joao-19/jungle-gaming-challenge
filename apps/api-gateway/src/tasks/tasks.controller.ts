@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -17,7 +18,12 @@ import {
   ApiBearerAuth,
   ApiResponse,
 } from '@nestjs/swagger';
-import { CreateTaskDto, UpdateTaskDto, TaskResponseDto } from '@repo/dtos';
+import {
+  CreateTaskDto,
+  UpdateTaskDto,
+  TaskResponseDto,
+  GetTasksFilterDto,
+} from '@repo/dtos';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
@@ -46,8 +52,8 @@ export class TasksController {
     description: 'Lista de tarefas.',
     type: [TaskResponseDto],
   })
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(@Query() filters: GetTasksFilterDto) {
+    return this.tasksService.findAll(filters);
   }
 
   @UseGuards(AuthGuard('jwt'))

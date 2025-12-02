@@ -31,10 +31,12 @@ export class TasksService {
     }
   }
 
-  async findAll() {
+  async findAll(filters: any) {
     try {
       const response = await lastValueFrom(
-        this.httpService.get(`${this.tasksServiceUrl}/tasks`),
+        this.httpService.get(`${this.tasksServiceUrl}/tasks`, {
+          params: filters,
+        }),
       );
       return response.data;
     } catch (error) {

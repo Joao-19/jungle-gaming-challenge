@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { UpdateTaskDto } from '@repo/dtos';
+import { GetTasksFilterDto, UpdateTaskDto } from '@repo/dtos';
 
 @Controller('tasks')
 export class TasksController {
@@ -22,8 +22,8 @@ export class TasksController {
   }
 
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(@Query() filters: GetTasksFilterDto) {
+    return this.tasksService.findAll(filters);
   }
 
   @Get(':id')
