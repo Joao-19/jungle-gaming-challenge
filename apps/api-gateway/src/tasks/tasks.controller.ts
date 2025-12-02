@@ -23,6 +23,7 @@ import {
   UpdateTaskDto,
   TaskResponseDto,
   GetTasksFilterDto,
+  GetTaskHistoryDto,
 } from '@repo/dtos';
 
 @ApiTags('Tasks')
@@ -104,7 +105,7 @@ export class TasksController {
     status: 200,
     description: 'Histórico da tarefa.',
   })
-  getHistory(@Param('id') id: string) {
-    return this.tasksService.getHistory(id);
+  getHistory(@Param('id') id: string, @Query() filters: GetTaskHistoryDto) {
+    return this.tasksService.getHistory(id, filters);
   }
 }

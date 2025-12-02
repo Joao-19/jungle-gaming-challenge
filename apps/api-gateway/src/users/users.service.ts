@@ -30,4 +30,16 @@ export class UsersService {
       );
     }
   }
+  async findOne(id: string) {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.get(`${this.authServiceUrl}/users/${id}`),
+      );
+      return response.data;
+    } catch (error) {
+      // Se não achar, retorna null ou lança erro?
+      // Melhor retornar null para não quebrar o histórico se o usuário foi deletado
+      return null;
+    }
+  }
 }

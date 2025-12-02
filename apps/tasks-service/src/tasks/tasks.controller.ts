@@ -46,7 +46,7 @@ export class TasksController {
   }
 
   @Get(':id/history')
-  getHistory(@Param('id') id: string) {
-    return this.tasksService.getHistory(id);
+  getHistory(@Param('id') id: string, @Query() filters: GetTasksFilterDto) {
+    return this.tasksService.getHistory(id, filters);
   }
 }

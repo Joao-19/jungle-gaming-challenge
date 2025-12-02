@@ -138,6 +138,33 @@ export class TasksService {
       });
     }
 
+    // Detect and Log Title Change
+    if (updateTaskDto.title && updateTaskDto.title !== task.title) {
+      await this.historyRepository.save({
+        taskId: task.id,
+        userId: userId,
+        action: 'UPDATED',
+        field: 'TITLE',
+        oldValue: task.title,
+        newValue: updateTaskDto.title,
+      });
+    }
+
+    // Detect and Log Description Change
+    if (
+      updateTaskDto.description !== undefined &&
+      updateTaskDto.description !== task.description
+    ) {
+      await this.historyRepository.save({
+        taskId: task.id,
+        userId: userId,
+        action: 'UPDATED',
+        field: 'DESCRIPTION',
+        oldValue: task.description ? 'Texto anterior' : 'Vazio',
+        newValue: updateTaskDto.description ? 'Novo texto' : 'Vazio',
+      });
+    }
+
     // Detect and Log Assignees Change
     if (updateTaskDto.assigneeIds) {
       const oldAssignees = (task.assigneeIds || []).sort();
@@ -179,10 +206,24 @@ export class TasksService {
     return this.tasksRepository.delete(id);
   }
 
-  async getHistory(taskId: string) {
-    return this.historyRepository.find({
+  async getHistory(taskId: string, filters: GetTasksFilterDto) {
+    const { page = 1, limit = 5 } = filters;
+
+    const [items, total] = await this.historyRepository.findAndCount({
       where: { taskId },
       order: { createdAt: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return {
+      data: items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 }

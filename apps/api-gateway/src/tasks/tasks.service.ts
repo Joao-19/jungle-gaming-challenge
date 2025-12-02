@@ -3,6 +3,8 @@ import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 
+import { UsersService } from '../users/users.service';
+
 @Injectable()
 export class TasksService {
   private tasksServiceUrl: string;
@@ -10,6 +12,7 @@ export class TasksService {
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
+    private readonly usersService: UsersService,
   ) {
     this.tasksServiceUrl =
       this.configService.get<string>('TASKS_SERVICE_URL') ||
@@ -92,12 +95,29 @@ export class TasksService {
     }
   }
 
-  async getHistory(id: string) {
+  async getHistory(id: string, filters: any) {
     try {
       const response = await lastValueFrom(
-        this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}/history`),
+        this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}/history`, {
+          params: filters,
+        }),
       );
-      return response.data;
+
+      const history = response.data.data;
+      const enrichedHistory = await Promise.all(
+        history.map(async (item: any) => {
+          const user = await this.usersService.findOne(item.userId);
+          return {
+            ...item,
+            user: user ? { username: user.username } : null,
+          };
+        }),
+      );
+
+      return {
+        ...response.data,
+        data: enrichedHistory,
+      };
     } catch (error) {
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
