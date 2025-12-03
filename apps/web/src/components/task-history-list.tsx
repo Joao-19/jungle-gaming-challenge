@@ -89,7 +89,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
 
     // WebSocket Connection
     useEffect(() => {
-        const socket = io("http://localhost:3004"); // Notifications Service URL
+        const socket = io(import.meta.env.VITE_WS_URL || "http://localhost:3004"); // Notifications Service URL
 
         socket.on("connect", () => {
             console.log("Connected to WebSocket");
