@@ -22,8 +22,11 @@ export class TasksController {
   }
 
   @Get()
-  findAll(@Query() filters: GetTasksFilterDto) {
-    return this.tasksService.findAll(filters);
+  findAll(
+    @Query() filters: GetTasksFilterDto,
+    @Query('userId') userId: string,
+  ) {
+    return this.tasksService.findAll(filters, userId);
   }
 
   @Get(':id')

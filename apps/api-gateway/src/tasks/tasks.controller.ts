@@ -54,8 +54,9 @@ export class TasksController {
     description: 'Lista de tarefas.',
     type: [TaskResponseDto],
   })
-  findAll(@Query() filters: GetTasksFilterDto) {
-    return this.tasksService.findAll(filters);
+  findAll(@Query() filters: GetTasksFilterDto, @Request() req: any) {
+    const userId = req.user.userId;
+    return this.tasksService.findAll(filters, userId);
   }
 
   @UseGuards(AuthGuard('jwt'))

@@ -68,6 +68,8 @@ export function TaskDetailsDialog({
     const { userId } = useAuth();
 
     const isOwner = task?.userId === userId;
+    const isAssignee = (task?.assigneeIds || []).includes(userId || '');
+    const canEdit = isOwner || isAssignee;
 
     const {
         register,
@@ -144,7 +146,7 @@ export function TaskDetailsDialog({
                                 <Input
                                     id="title"
                                     {...register('title')}
-                                    disabled={!isOwner}
+                                    disabled={!canEdit}
                                 />
                                 {errors.title && (
                                     <span className="text-xs text-red-500">
@@ -159,7 +161,7 @@ export function TaskDetailsDialog({
                                     id="description"
                                     {...register('description')}
                                     className="min-h-[100px]"
-                                    disabled={!isOwner}
+                                    disabled={!canEdit}
                                 />
                             </div>
 
@@ -169,7 +171,7 @@ export function TaskDetailsDialog({
                                     <Select
                                         value={status}
                                         onValueChange={(val) => setValue('status', val as TaskStatus)}
-                                        disabled={!isOwner}
+                                        disabled={!canEdit}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -187,7 +189,7 @@ export function TaskDetailsDialog({
                                     <Select
                                         value={priority}
                                         onValueChange={(val) => setValue('priority', val as TaskPriority)}
-                                        disabled={!isOwner}
+                                        disabled={!canEdit}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -208,13 +210,13 @@ export function TaskDetailsDialog({
                                     id="dueDate"
                                     type="date"
                                     {...register('dueDate')}
-                                    disabled={!isOwner}
+                                    disabled={!canEdit}
                                 />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label>Atribuir a:</Label>
-                                {isOwner ? (
+                                {canEdit ? (
                                     <UserMultiSelect
                                         selectedUserIds={assigneeIds}
                                         onChange={(ids) => setValue('assigneeIds', ids)}
@@ -229,14 +231,14 @@ export function TaskDetailsDialog({
                             </div>
 
                             <div className="flex justify-end space-x-2 pt-4">
-                                {isOwner && (
+                                {canEdit && (
                                     <Button type="submit" disabled={isSubmitting}>
                                         {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
                                     </Button>
                                 )}
-                                {!isOwner && (
+                                {!canEdit && (
                                     <p className="text-sm text-muted-foreground italic">
-                                        Somente o dono pode editar esta tarefa.
+                                        Somente o dono ou atribuídos podem editar esta tarefa.
                                     </p>
                                 )}
                             </div>

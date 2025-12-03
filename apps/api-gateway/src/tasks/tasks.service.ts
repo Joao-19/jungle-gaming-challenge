@@ -34,11 +34,11 @@ export class TasksService {
     }
   }
 
-  async findAll(filters: any) {
+  async findAll(filters: any, userId: string) {
     try {
       const response = await lastValueFrom(
         this.httpService.get(`${this.tasksServiceUrl}/tasks`, {
-          params: filters,
+          params: { ...filters, userId },
         }),
       );
       return response.data;

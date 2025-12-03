@@ -75,7 +75,7 @@ export class TasksService {
     return savedTask;
   }
 
-  async findAll(filters: GetTasksFilterDto) {
+  async findAll(filters: GetTasksFilterDto, userId: string) {
     const {
       title,
       status,
@@ -86,6 +86,14 @@ export class TasksService {
       limit = 10,
     } = filters;
     const query = this.tasksRepository.createQueryBuilder('task');
+
+    // Filter by Owner OR Assignee
+    // Since assigneeIds is a simple-array (string), we use LIKE for partial match
+    // Note: This is a pragmatic solution for simple-array.
+    query.andWhere(
+      '(task.userId = :userId OR task.assigneeIds LIKE :userPattern)',
+      { userId, userPattern: `%${userId}%` },
+    );
 
     if (title) {
       query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
@@ -135,7 +143,11 @@ export class TasksService {
       throw new Error('Task not found');
     }
 
-    if (task.userId !== userId) {
+    // Allow Owner OR Assignee to update
+    const isOwner = task.userId === userId;
+    const isAssignee = (task.assigneeIds || []).includes(userId);
+
+    if (!isOwner && !isAssignee) {
       throw new ForbiddenException('You are not allowed to update this task');
     }
 
