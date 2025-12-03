@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { UserMultiSelect } from './user-multi-select';
+import { TaskHistoryList } from './task-history-list';
 import { api } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
@@ -42,6 +43,7 @@ interface TaskDetailsDialogProps {
     task: Task | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    onUpdate?: () => void;
 }
 
 const updateTaskSchema = z.object({
@@ -59,12 +61,15 @@ export function TaskDetailsDialog({
     task,
     open,
     onOpenChange,
+    onUpdate,
 }: TaskDetailsDialogProps) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { userId } = useAuth();
 
     const isOwner = task?.userId === userId;
+    const isAssignee = (task?.assigneeIds || []).includes(userId || '');
+    const canEdit = isOwner || isAssignee;
 
     const {
         register,
@@ -107,6 +112,9 @@ export function TaskDetailsDialog({
             });
 
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            if (onUpdate) {
+                onUpdate();
+            }
         } catch (error) {
             console.error(error);
             toast({
@@ -138,7 +146,7 @@ export function TaskDetailsDialog({
                                 <Input
                                     id="title"
                                     {...register('title')}
-                                    disabled={!isOwner}
+                                    disabled={!canEdit}
                                 />
                                 {errors.title && (
                                     <span className="text-xs text-red-500">
@@ -153,7 +161,7 @@ export function TaskDetailsDialog({
                                     id="description"
                                     {...register('description')}
                                     className="min-h-[100px]"
-                                    disabled={!isOwner}
+                                    disabled={!canEdit}
                                 />
                             </div>
 
@@ -163,7 +171,7 @@ export function TaskDetailsDialog({
                                     <Select
                                         value={status}
                                         onValueChange={(val) => setValue('status', val as TaskStatus)}
-                                        disabled={!isOwner}
+                                        disabled={!canEdit}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -181,7 +189,7 @@ export function TaskDetailsDialog({
                                     <Select
                                         value={priority}
                                         onValueChange={(val) => setValue('priority', val as TaskPriority)}
-                                        disabled={!isOwner}
+                                        disabled={!canEdit}
                                     >
                                         <SelectTrigger>
                                             <SelectValue />
@@ -202,13 +210,13 @@ export function TaskDetailsDialog({
                                     id="dueDate"
                                     type="date"
                                     {...register('dueDate')}
-                                    disabled={!isOwner}
+                                    disabled={!canEdit}
                                 />
                             </div>
 
                             <div className="grid gap-2">
                                 <Label>Atribuir a:</Label>
-                                {isOwner ? (
+                                {canEdit ? (
                                     <UserMultiSelect
                                         selectedUserIds={assigneeIds}
                                         onChange={(ids) => setValue('assigneeIds', ids)}
@@ -223,14 +231,14 @@ export function TaskDetailsDialog({
                             </div>
 
                             <div className="flex justify-end space-x-2 pt-4">
-                                {isOwner && (
+                                {canEdit && (
                                     <Button type="submit" disabled={isSubmitting}>
                                         {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
                                     </Button>
                                 )}
-                                {!isOwner && (
+                                {!canEdit && (
                                     <p className="text-sm text-muted-foreground italic">
-                                        Somente o dono pode editar esta tarefa.
+                                        Somente o dono ou atribuídos podem editar esta tarefa.
                                     </p>
                                 )}
                             </div>
@@ -239,10 +247,8 @@ export function TaskDetailsDialog({
 
                     {/* Coluna Direita: Comentários e Histórico */}
                     <div className="border-l pl-6 space-y-4">
-                        <h3 className="font-semibold text-lg">Comentários & Histórico</h3>
-                        <div className="h-[400px] flex items-center justify-center border-2 border-dashed rounded-lg text-muted-foreground bg-muted/10">
-                            <p className="text-sm">Área reservada para comentários (Em breve)</p>
-                        </div>
+                        <h3 className="font-semibold text-lg">Histórico de Alterações</h3>
+                        <TaskHistoryList taskId={task.id} />
                     </div>
                 </div>
             </DialogContent>

@@ -42,4 +42,20 @@ export class AppController {
       changes: changes,
     });
   }
+
+  @EventPattern('comment_added')
+  handleCommentAdded(@Payload() data: any) {
+    console.log('Comment added:', data.comment.id);
+
+    const { comment, recipients } = data;
+
+    if (!recipients || recipients.length === 0) {
+      return;
+    }
+
+    this.notificationsGateway.notifyUsers(recipients, {
+      type: 'COMMENT',
+      ...comment,
+    });
+  }
 }

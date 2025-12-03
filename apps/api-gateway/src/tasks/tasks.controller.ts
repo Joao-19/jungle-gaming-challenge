@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -17,7 +18,14 @@ import {
   ApiBearerAuth,
   ApiResponse,
 } from '@nestjs/swagger';
-import { CreateTaskDto, UpdateTaskDto, TaskResponseDto } from '@repo/dtos';
+import {
+  CreateTaskDto,
+  UpdateTaskDto,
+  TaskResponseDto,
+  GetTasksFilterDto,
+  GetTaskHistoryDto,
+  CreateCommentDto,
+} from '@repo/dtos';
 
 @ApiTags('Tasks')
 @ApiBearerAuth()
@@ -46,8 +54,9 @@ export class TasksController {
     description: 'Lista de tarefas.',
     type: [TaskResponseDto],
   })
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(@Query() filters: GetTasksFilterDto, @Request() req: any) {
+    const userId = req.user.userId;
+    return this.tasksService.findAll(filters, userId);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -89,5 +98,37 @@ export class TasksController {
   remove(@Param('id') id: string, @Request() req: any) {
     const userId = req.user.userId;
     return this.tasksService.remove(id, userId);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Obter histórico da tarefa' })
+  @ApiResponse({
+    status: 200,
+    description: 'Histórico da tarefa.',
+  })
+  getHistory(@Param('id') id: string, @Query() filters: GetTaskHistoryDto) {
+    return this.tasksService.getHistory(id, filters);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/comments')
+  @ApiOperation({ summary: 'Adicionar comentário' })
+  @ApiResponse({ status: 201, description: 'Comentário adicionado.' })
+  addComment(
+    @Param('id') id: string,
+    @Body() body: CreateCommentDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.tasksService.addComment(id, userId, body.content);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':id/comments')
+  @ApiOperation({ summary: 'Listar comentários' })
+  @ApiResponse({ status: 200, description: 'Lista de comentários.' })
+  getComments(@Param('id') id: string) {
+    return this.tasksService.getComments(id);
   }
 }

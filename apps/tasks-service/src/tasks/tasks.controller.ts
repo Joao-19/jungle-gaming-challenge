@@ -9,7 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { UpdateTaskDto } from '@repo/dtos';
+import { GetTasksFilterDto, UpdateTaskDto } from '@repo/dtos';
 
 @Controller('tasks')
 export class TasksController {
@@ -22,8 +22,11 @@ export class TasksController {
   }
 
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(
+    @Query() filters: GetTasksFilterDto,
+    @Query('userId') userId: string,
+  ) {
+    return this.tasksService.findAll(filters, userId);
   }
 
   @Get(':id')
@@ -43,5 +46,23 @@ export class TasksController {
   @Delete(':id')
   remove(@Param('id') id: string, @Query('userId') userId: string) {
     return this.tasksService.remove(id, userId);
+  }
+
+  @Get(':id/history')
+  getHistory(@Param('id') id: string, @Query() filters: GetTasksFilterDto) {
+    return this.tasksService.getHistory(id, filters);
+  }
+
+  @Post(':id/comments')
+  addComment(
+    @Param('id') id: string,
+    @Body() body: { userId: string; content: string },
+  ) {
+    return this.tasksService.addComment(id, body.userId, body.content);
+  }
+
+  @Get(':id/comments')
+  getComments(@Param('id') id: string) {
+    return this.tasksService.getComments(id);
   }
 }
