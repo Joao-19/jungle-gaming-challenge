@@ -49,4 +49,17 @@ export class TasksController {
   getHistory(@Param('id') id: string, @Query() filters: GetTasksFilterDto) {
     return this.tasksService.getHistory(id, filters);
   }
+
+  @Post(':id/comments')
+  addComment(
+    @Param('id') id: string,
+    @Body() body: { userId: string; content: string },
+  ) {
+    return this.tasksService.addComment(id, body.userId, body.content);
+  }
+
+  @Get(':id/comments')
+  getComments(@Param('id') id: string) {
+    return this.tasksService.getComments(id);
+  }
 }

@@ -24,6 +24,7 @@ import {
   TaskResponseDto,
   GetTasksFilterDto,
   GetTaskHistoryDto,
+  CreateCommentDto,
 } from '@repo/dtos';
 
 @ApiTags('Tasks')
@@ -107,5 +108,26 @@ export class TasksController {
   })
   getHistory(@Param('id') id: string, @Query() filters: GetTaskHistoryDto) {
     return this.tasksService.getHistory(id, filters);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post(':id/comments')
+  @ApiOperation({ summary: 'Adicionar comentário' })
+  @ApiResponse({ status: 201, description: 'Comentário adicionado.' })
+  addComment(
+    @Param('id') id: string,
+    @Body() body: CreateCommentDto,
+    @Request() req: any,
+  ) {
+    const userId = req.user.userId;
+    return this.tasksService.addComment(id, userId, body.content);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get(':id/comments')
+  @ApiOperation({ summary: 'Listar comentários' })
+  @ApiResponse({ status: 200, description: 'Lista de comentários.' })
+  getComments(@Param('id') id: string) {
+    return this.tasksService.getComments(id);
   }
 }

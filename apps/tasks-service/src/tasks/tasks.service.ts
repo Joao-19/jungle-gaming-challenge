@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { TaskHistory } from './entities/task-history.entity';
+import { TaskComment } from './entities/task-comment.entity';
 
 @Injectable()
 export class TasksService {
@@ -21,8 +22,35 @@ export class TasksService {
     @InjectRepository(TaskHistory)
     private historyRepository: Repository<TaskHistory>,
 
+    @InjectRepository(TaskComment)
+    private commentsRepository: Repository<TaskComment>,
+
     @Inject('NOTIFICATIONS_SERVICE') private readonly client: ClientProxy,
   ) {}
+
+  async addComment(taskId: string, userId: string, content: string) {
+    const comment = this.commentsRepository.create({
+      taskId,
+      userId,
+      content,
+    });
+    const savedComment = await this.commentsRepository.save(comment);
+
+    // Emit event for real-time updates
+    this.client.emit('comment_added', savedComment);
+
+    return savedComment;
+  }
+
+  async getComments(taskId: string) {
+    return this.commentsRepository.find({
+      where: { taskId },
+      order: { createdAt: 'ASC' }, // Comments usually ASC (oldest first) or DESC?
+      // ClickUp/Chat usually shows newest at bottom.
+      // If we merge with history, we need consistent sorting.
+      // Let's return them and let frontend/gateway sort.
+    });
+  }
 
   async create(createTaskDto: CreateTaskDto, userId: string) {
     const task = this.tasksRepository.create({

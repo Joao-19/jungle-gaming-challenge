@@ -5,10 +5,11 @@ import { TasksController } from './tasks.controller';
 import { Task } from './entities/task.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TaskHistory } from './entities/task-history.entity';
+import { TaskComment } from './entities/task-comment.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, TaskHistory]),
+    TypeOrmModule.forFeature([Task, TaskHistory, TaskComment]),
     // Registra o cliente que vai mandar mensagens
     ClientsModule.register([
       {

@@ -125,4 +125,47 @@ export class TasksService {
       );
     }
   }
+
+  async addComment(id: string, userId: string, content: string) {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.post(`${this.tasksServiceUrl}/tasks/${id}/comments`, {
+          userId,
+          content,
+        }),
+      );
+      return response.data;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data || 'Erro no Tasks Service',
+        error.response?.status || 500,
+      );
+    }
+  }
+
+  async getComments(id: string) {
+    try {
+      const response = await lastValueFrom(
+        this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}/comments`),
+      );
+
+      const comments = response.data;
+      const enrichedComments = await Promise.all(
+        comments.map(async (comment: any) => {
+          const user = await this.usersService.findOne(comment.userId);
+          return {
+            ...comment,
+            user: user ? { username: user.username } : null,
+          };
+        }),
+      );
+
+      return enrichedComments;
+    } catch (error) {
+      throw new HttpException(
+        error.response?.data || 'Erro no Tasks Service',
+        error.response?.status || 500,
+      );
+    }
+  }
 }
