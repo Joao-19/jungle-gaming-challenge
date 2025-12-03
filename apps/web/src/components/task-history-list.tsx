@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -6,8 +6,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Send } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { io } from "socket.io-client";
+import { useEffect, useMemo, useRef, useState } from "react";
+import useComments, { type CommentItem } from "@/composables/Task/useComments";
+import { useAuth } from "@/context/auth-context";
 
 interface TaskHistoryListProps {
     taskId: string;
@@ -29,15 +30,6 @@ interface HistoryItem {
     type: 'HISTORY';
 }
 
-interface CommentItem {
-    id: string;
-    content: string;
-    createdAt: string;
-    userId: string;
-    user?: User;
-    type: 'COMMENT';
-}
-
 type ActivityItem = HistoryItem | CommentItem;
 
 async function fetchHistory({ pageParam = 1, queryKey }: any) {
@@ -45,14 +37,9 @@ async function fetchHistory({ pageParam = 1, queryKey }: any) {
     const response = await api.get(`/tasks/${taskId}/history`, {
         params: {
             page: pageParam,
-            limit: 10, // Fetch more history to fill the feed
+            limit: 5, // Limit to 5 as requested
         },
     });
-    return response.data;
-}
-
-async function fetchComments(taskId: string) {
-    const response = await api.get(`/tasks/${taskId}/comments`);
     return response.data;
 }
 
@@ -60,14 +47,14 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [commentText, setCommentText] = useState("");
     const [isSending, setIsSending] = useState(false);
-    const queryClient = useQueryClient();
+    const { userId } = useAuth();
 
     // Fetch History (Infinite)
     const {
         data: historyData,
-        fetchNextPage,
-        hasNextPage,
-        isFetchingNextPage,
+        fetchNextPage: fetchNextHistory,
+        hasNextPage: hasNextHistory,
+        isFetchingNextPage: isFetchingNextHistory,
         isLoading: isLoadingHistory,
     } = useInfiniteQuery({
         queryKey: ["task-history", taskId],
@@ -81,55 +68,55 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
         },
     });
 
-    // Fetch Comments (All)
-    const { data: commentsData, isLoading: isLoadingComments } = useQuery({
-        queryKey: ["task-comments", taskId],
-        queryFn: () => fetchComments(taskId),
-    });
+    // Use Comments Hook (Infinite)
+    const {
+        commentsData,
+        isLoading: isLoadingComments,
+        addComment,
+        fetchNextPage: fetchNextComments,
+        hasNextPage: hasNextComments,
+        isFetchingNextPage: isFetchingNextComments,
+    } = useComments({ taskId, limit: 5, userId });
 
-    // WebSocket Connection
+
+    // Merge and Sort
+    const reversedActivity = useMemo(() => {
+        console.log("reversedActivity RECEBIDO");
+
+        const historyItems = historyData?.pages.flatMap((page) => page.data.map((item: any) => ({ ...item, type: 'HISTORY' }))) || [];
+        const commentItems = commentsData?.pages.flatMap((page) => page.data.map((item) => ({ ...item, type: 'COMMENT' as const }))) || [];
+
+        const allActivity = [...historyItems, ...commentItems].sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+
+        return [...allActivity].reverse(); // Oldest at top, Newest at bottom
+    }, [historyData, commentsData]);
+
+    const bottomRef = useRef<HTMLDivElement>(null);
+    const lastItemId = reversedActivity[reversedActivity.length - 1]?.id;
+
+    // Auto-scroll to bottom on initial load or new message
     useEffect(() => {
-        const socket = io(import.meta.env.VITE_WS_URL || "http://localhost:3004"); // Notifications Service URL
+        if (bottomRef.current) {
+            bottomRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [lastItemId]);
 
-        socket.on("connect", () => {
-            console.log("Connected to WebSocket");
-        });
+    const handleLoadMore = () => {
+        if (hasNextHistory) fetchNextHistory();
+        if (hasNextComments) fetchNextComments();
+    };
 
-        socket.on("notification", (data: any) => {
-            console.log("Notification received:", data);
-
-            // Handle Comment Notification
-            if (data.type === 'COMMENT') {
-                if (data.taskId === taskId) {
-                    queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
-                    queryClient.invalidateQueries({ queryKey: ["task-comments", taskId] });
-                }
-            }
-            // Handle Task Update Notification (Status/Priority/Assignees)
-            else if (data.type === 'TASK_UPDATED' || data.type === 'TASK_CREATED') {
-                if (data.taskId === taskId) {
-                    // If we are viewing the task that was updated, refresh history
-                    queryClient.invalidateQueries({ queryKey: ["task-history", taskId] });
-                    // Also invalidate task details to show new status/priority
-                    queryClient.invalidateQueries({ queryKey: ["tasks"] }); // This might be too broad, but ensures list updates too
-                    // Ideally we invalidate ["task", taskId] if we had a specific query for details
-                }
-            }
-        });
-
-        return () => {
-            socket.disconnect();
-        };
-    }, [taskId, queryClient]);
-
+    const isFetchingNextPage = isFetchingNextHistory || isFetchingNextComments;
+    const hasNextPage = hasNextHistory || hasNextComments;
 
     const handleSendComment = async () => {
         if (!commentText.trim()) return;
         setIsSending(true);
         try {
-            await api.post(`/tasks/${taskId}/comments`, { content: commentText });
+            await addComment({ content: commentText });
             setCommentText("");
-            queryClient.invalidateQueries({ queryKey: ["task-comments", taskId] });
         } catch (error) {
             console.error("Failed to send comment", error);
         } finally {
@@ -141,16 +128,6 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
         return <div className="text-sm text-muted-foreground p-4">Carregando atividade...</div>;
     }
 
-    // Merge and Sort
-    const historyItems = historyData?.pages.flatMap((page) => page.data.map((item: any) => ({ ...item, type: 'HISTORY' }))) || [];
-    const commentItems = commentsData?.map((item: any) => ({ ...item, type: 'COMMENT' })) || [];
-
-    const allActivity = [...historyItems, ...commentItems].sort((a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    const reversedActivity = [...allActivity].reverse(); // Oldest at top, Newest at bottom
-
     return (
         <div className="flex flex-col h-[400px]">
             <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
@@ -160,7 +137,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => fetchNextPage()}
+                                onClick={handleLoadMore}
                                 disabled={isFetchingNextPage}
                                 className="text-xs text-muted-foreground"
                             >
@@ -184,7 +161,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
                                             {formatDistanceToNow(new Date(item.createdAt), {
                                                 addSuffix: true,
                                                 locale: ptBR,
-                                            })}
+                                            })} {item.createdAt}
                                         </span>
                                     </div>
                                     <p className="text-muted-foreground text-xs bg-muted/30 p-2 rounded-md w-fit italic">
@@ -201,7 +178,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
                                             {formatDistanceToNow(new Date(item.createdAt), {
                                                 addSuffix: true,
                                                 locale: ptBR,
-                                            })}
+                                            })} {item.createdAt}
                                         </span>
                                     </div>
                                     <div className="text-sm bg-secondary/20 p-2 rounded-md w-fit text-foreground">
@@ -211,6 +188,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
                             )}
                         </div>
                     ))}
+                    <div ref={bottomRef} />
                 </div>
             </ScrollArea>
 

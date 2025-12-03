@@ -62,7 +62,7 @@ export class TasksController {
   }
 
   @Get(':id/comments')
-  getComments(@Param('id') id: string) {
-    return this.tasksService.getComments(id);
+  getComments(@Param('id') id: string, @Query() filters: GetTasksFilterDto) {
+    return this.tasksService.getComments(id, filters);
   }
 }

@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useDebounce } from '@/hooks/use-debounce'; // Vamos precisar criar esse hook ou usar um timeout simples
+import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,7 +44,6 @@ export function UserMultiSelect({
         fetchNextPage,
         hasNextPage,
         isFetchingNextPage,
-        isLoading,
     } = useInfiniteQuery({
         queryKey: ['users', debouncedSearch],
         queryFn: async ({ pageParam = 1 }) => {

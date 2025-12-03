@@ -128,7 +128,7 @@ export class TasksController {
   @Get(':id/comments')
   @ApiOperation({ summary: 'Listar comentários' })
   @ApiResponse({ status: 200, description: 'Lista de comentários.' })
-  getComments(@Param('id') id: string) {
-    return this.tasksService.getComments(id);
+  getComments(@Param('id') id: string, @Query() filters: GetTasksFilterDto) {
+    return this.tasksService.getComments(id, filters);
   }
 }

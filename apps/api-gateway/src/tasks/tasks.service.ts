@@ -143,13 +143,15 @@ export class TasksService {
     }
   }
 
-  async getComments(id: string) {
+  async getComments(id: string, filters: any) {
     try {
       const response = await lastValueFrom(
-        this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}/comments`),
+        this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}/comments`, {
+          params: filters,
+        }),
       );
 
-      const comments = response.data;
+      const comments = response.data.data; // Extract comments array from paginated response
       const enrichedComments = await Promise.all(
         comments.map(async (comment: any) => {
           const user = await this.usersService.findOne(comment.userId);
@@ -160,8 +162,13 @@ export class TasksService {
         }),
       );
 
-      return enrichedComments;
+      return {
+        ...response.data,
+        data: enrichedComments,
+      };
     } catch (error) {
+      console.log(error);
+
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,

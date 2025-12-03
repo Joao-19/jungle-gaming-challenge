@@ -1,8 +1,9 @@
 import { createFileRoute, redirect, Outlet } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { io } from 'socket.io-client'; // Importe o cliente
+import { io } from 'socket.io-client';
 import { useAuth } from '@/context/auth-context';
-import { useToast } from '@/hooks/use-toast'; // Importe o hook de toast do Shadcn
+import { useToast } from '@/hooks/use-toast';
+import { ModeToggle } from '@/components/mode-toggle';
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context }) => {
@@ -14,37 +15,29 @@ export const Route = createFileRoute('/_authenticated')({
 });
 
 function AuthenticatedLayout() {
-  const { userId } = useAuth(); // Precisamos do ID para conectar
+  const { userId } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!userId) return;
 
-    // 1. Conecta no Serviço de Notificações (Porta 3004)
-    const socket = io('http://localhost:3004', {
-      query: { userId }, // Manda o ID no "aperto de mão"
-      transports: ['websocket'], // Força websocket para ser mais rápido
+    const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:3004', {
+      query: { userId },
+      transports: ['websocket'],
     });
 
-    // 2. Log de depuração (abra o console do navegador pra ver)
     socket.on('connect', () => {
       console.log('🟢 Conectado ao WebSocket!', socket.id);
     });
 
-    // 3. Ouve o evento que definimos no Backend
     socket.on('notification', (data: any) => {
-      console.log('🔔 Notificação recebida:', data);
-
-      // 4. Mostra o Toast bonitão do Shadcn
       toast({
         title: "Nova Atualização",
-        description: data.title, // "Nova tarefa criada: X"
+        description: data.title,
         duration: 5000,
-        className: "bg-green-50 border-green-200", // Um charminho visual
       });
     });
 
-    // 5. Limpeza: Desconecta se o usuário sair da página (evita duplicar conexões)
     return () => {
       socket.disconnect();
       console.log('🔴 Desconectado do WebSocket');
@@ -52,11 +45,14 @@ function AuthenticatedLayout() {
   }, [userId, toast]);
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-slate-50">
-      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-white px-6 shadow-sm">
+    <div className="flex min-h-screen w-full flex-col bg-background">
+      <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background px-6 shadow-sm">
         <h1 className="font-bold text-lg text-primary">Task Manager</h1>
-        <div className="ml-auto text-sm text-slate-500">
-          ID: {userId?.slice(0, 8)}...
+        <div className="ml-auto flex items-center gap-4">
+          <div className="text-sm text-muted-foreground">
+            ID: {userId?.slice(0, 8)}...
+          </div>
+          <ModeToggle />
         </div>
       </header>
 

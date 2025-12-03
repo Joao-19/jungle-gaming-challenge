@@ -53,14 +53,25 @@ export class TasksService {
     return savedComment;
   }
 
-  async getComments(taskId: string) {
-    return this.commentsRepository.find({
+  async getComments(taskId: string, filters: GetTasksFilterDto) {
+    const { page = 1, limit = 10 } = filters;
+
+    const [items, total] = await this.commentsRepository.findAndCount({
       where: { taskId },
-      order: { createdAt: 'ASC' }, // Comments usually ASC (oldest first) or DESC?
-      // ClickUp/Chat usually shows newest at bottom.
-      // If we merge with history, we need consistent sorting.
-      // Let's return them and let frontend/gateway sort.
+      order: { createdAt: 'DESC' }, // Newest first to match history
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return {
+      data: items,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async create(createTaskDto: CreateTaskDto, userId: string) {

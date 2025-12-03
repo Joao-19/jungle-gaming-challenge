@@ -8,6 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { routeTree } from './routeTree.gen';
 
 import { AuthProvider, useAuth } from './context/auth-context';
+import { ThemeProvider } from './components/theme-provider';
 import './index.css';
 
 // 1. Configuração do TanStack Query (Cache de dados)
@@ -42,7 +43,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <InnerApp />
+        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+          <InnerApp />
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   </React.StrictMode>,
