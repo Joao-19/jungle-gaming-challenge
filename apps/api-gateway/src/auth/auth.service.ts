@@ -26,6 +26,14 @@ export class AuthService {
 
   async login(body: LoginDto): Promise<LoginResponseDto> {
     try {
+      // 🔍 DEBUG: Log email length and content
+      console.log('📧 [LOGIN DEBUG] Email received:', {
+        email: body.email,
+        emailLength: body.email.length,
+        passwordLength: body.password.length,
+        timestamp: new Date().toISOString(),
+      });
+
       const response = await lastValueFrom(
         this.httpService.post<LoginResponseDto>(
           `${this.AUTH_SERVICE_URL}/auth/login`,
@@ -34,6 +42,15 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
+      // 🔍 DEBUG: Log validation errors
+      if (error.response?.status === 400) {
+        console.error('❌ [LOGIN VALIDATION ERROR]:', {
+          statusCode: error.response.status,
+          message: error.response.data,
+          timestamp: new Date().toISOString(),
+        });
+      }
+
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,

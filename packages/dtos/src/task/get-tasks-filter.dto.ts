@@ -5,6 +5,8 @@ import {
   IsString,
   IsInt,
   Min,
+  Max,
+  MaxLength,
   IsISO8601,
 } from "class-validator";
 import { Type } from "class-transformer";
@@ -12,6 +14,7 @@ import { TaskPriority, TaskStatus } from "./enums";
 
 export class GetTasksFilterDto {
   @ApiPropertyOptional({ description: "Filter by title (partial match)" })
+  @MaxLength(200, { message: "Search title must not exceed 200 characters" })
   @IsOptional()
   @IsString()
   title?: string;
@@ -47,9 +50,10 @@ export class GetTasksFilterDto {
   page?: number = 1;
 
   @ApiPropertyOptional({
-    description: "Items per page (default: 10)",
+    description: "Items per page (default: 10, max: 100)",
     default: 10,
   })
+  @Max(100, { message: "Cannot request more than 100 items per page" })
   @IsOptional()
   @Type(() => Number)
   @IsInt()

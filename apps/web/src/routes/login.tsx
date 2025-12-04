@@ -1,5 +1,8 @@
 import { createFileRoute, useNavigate, Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 import { useAuth } from '@/context/auth-context';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -13,6 +16,53 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const Route = createFileRoute('/login')({
   component: LoginPage,
 });
+
+// ============================================
+// Zod Schemas
+// ============================================
+
+const loginSchema = z.object({
+  email: z
+    .string()
+    .email('Email inválido')
+    .max(254, 'Email deve ter no máximo 254 caracteres'), // RFC 5321 standard
+  password: z
+    .string()
+    .min(1, 'Senha é obrigatória')
+    .max(128, 'Senha deve ter no máximo 128 caracteres'), // Prevent DoS attacks
+});
+
+const registerSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3, 'Nome de usuário deve ter no mínimo 3 caracteres')
+      .max(50, 'Nome de usuário deve ter no máximo 50 caracteres') // Prevent abuse
+      .regex(/^[a-zA-Z0-9_-]+$/, 'Nome de usuário deve conter apenas letras, números, - e _'),
+    email: z
+      .string()
+      .email('Email inválido')
+      .max(254, 'Email deve ter no máximo 254 caracteres'), // RFC 5321 standard
+    password: z
+      .string()
+      .min(6, 'Senha deve ter no mínimo 6 caracteres')
+      .max(128, 'Senha deve ter no máximo 128 caracteres') // Prevent buffer overflow
+      .regex(/[A-Z]/, 'Senha deve conter pelo menos uma letra maiúscula')
+      .regex(/[a-z]/, 'Senha deve conter pelo menos uma letra minúscula')
+      .regex(/\d/, 'Senha deve conter pelo menos um número'),
+    confirmPassword: z.string().max(128, 'Senha deve ter no máximo 128 caracteres'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'As senhas não coincidem',
+    path: ['confirmPassword'],
+  });
+
+type LoginFormData = z.infer<typeof loginSchema>;
+type RegisterFormData = z.infer<typeof registerSchema>;
+
+// ============================================
+// Main Page Component
+// ============================================
 
 function LoginPage() {
   const { login, isAuthenticated } = useAuth();
@@ -40,7 +90,7 @@ function LoginPage() {
           layout
           className="rounded-xl border bg-card text-card-foreground shadow overflow-hidden"
           initial={false}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
           <AnimatePresence mode="wait" initial={false}>
             {activeTab === 'login' ? (
@@ -71,33 +121,36 @@ function LoginPage() {
   );
 }
 
+// ============================================
+// Login Form Component
+// ============================================
+
 function LoginForm({ login, toast }: { login: any; toast: any }) {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+  });
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
+  const onSubmit = async (data: LoginFormData) => {
     try {
-      const res = await api.post('/auth/login', { email, password });
+      const res = await api.post('/auth/login', data);
       const payloadBase64 = res.data.accessToken.split('.')[1];
       const payload = JSON.parse(atob(payloadBase64));
 
       login(res.data.accessToken, res.data.refreshToken, payload.sub);
       toast({
-        title: "Sucesso!",
-        description: "Login realizado com sucesso.",
+        title: 'Sucesso!',
+        description: 'Login realizado com sucesso.',
       });
     } catch (error: any) {
       toast({
-        variant: "destructive",
-        title: "Erro no Login",
-        description: error.response?.data?.message || "Verifique suas credenciais.",
+        variant: 'destructive',
+        title: 'Erro no Login',
+        description: error.response?.data?.message || 'Verifique suas credenciais.',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -108,36 +161,31 @@ function LoginForm({ login, toast }: { login: any; toast: any }) {
         <CardDescription>Use seu email e senha para acessar.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="login-email">Email</Label>
             <Input
               id="login-email"
               type="email"
               placeholder="seu@email.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              {...register('email')}
             />
+            {errors.email && (
+              <span className="text-xs text-red-500">{errors.email.message}</span>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="login-password">Senha</Label>
-            <Input
-              id="login-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <Input id="login-password" type="password" {...register('password')} />
+            {errors.password && (
+              <span className="text-xs text-red-500">{errors.password.message}</span>
+            )}
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Entrando...' : 'Entrar'}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Entrando...' : 'Entrar'}
           </Button>
           <div className="text-center mt-2">
-            <Link
-              to="/forgot-password"
-              className="text-sm text-primary hover:underline"
-            >
+            <Link to="/forgot-password" className="text-sm text-primary hover:underline">
               Esqueceu sua senha?
             </Link>
           </div>
@@ -147,78 +195,42 @@ function LoginForm({ login, toast }: { login: any; toast: any }) {
   );
 }
 
+// ============================================
+// Register Form Component
+// ============================================
+
 function RegisterForm({ toast, onSuccess }: { toast: any; onSuccess: () => void }) {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormData>({
+    resolver: zodResolver(registerSchema),
+  });
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Validate password match
-    if (password !== confirmPassword) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "As senhas não coincidem.",
-      });
-      return;
-    }
-
-    // Validate password strength
-    if (password.length < 6) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "A senha deve ter no mínimo 6 caracteres.",
-      });
-      return;
-    }
-
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /\d/.test(password);
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumber) {
-      toast({
-        variant: "destructive",
-        title: "Senha fraca",
-        description: "A senha deve conter pelo menos uma letra maiúscula, uma minúscula e um número.",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
+  const onSubmit = async (data: RegisterFormData) => {
     try {
-      await api.post('/auth/register', { username, email, password });
+      const { confirmPassword, ...registerData } = data;
+      await api.post('/auth/register', registerData);
 
       toast({
-        title: "Sucesso!",
-        description: "Conta criada com sucesso. Faça login para continuar.",
+        title: 'Sucesso!',
+        description: 'Conta criada com sucesso. Faça login para continuar.',
       });
 
-      // Reset form
-      setUsername('');
-      setEmail('');
-      setPassword('');
-      setConfirmPassword('');
+      reset();
 
       // Switch to login tab
       setTimeout(() => {
         onSuccess();
       }, 1000);
-
     } catch (error: any) {
       toast({
-        variant: "destructive",
-        title: "Erro no Registro",
-        description: error.response?.data?.message || "Erro ao criar conta. Tente novamente.",
+        variant: 'destructive',
+        title: 'Erro no Registro',
+        description: error.response?.data?.message || 'Erro ao criar conta. Tente novamente.',
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -229,17 +241,18 @@ function RegisterForm({ toast, onSuccess }: { toast: any; onSuccess: () => void 
         <CardDescription>Preencha os dados para se registrar.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleRegister} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="register-username">Nome de Usuário</Label>
             <Input
               id="register-username"
               type="text"
               placeholder="usuario123"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
+              {...register('username')}
             />
+            {errors.username && (
+              <span className="text-xs text-red-500">{errors.username.message}</span>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="register-email">Email</Label>
@@ -247,12 +260,11 @@ function RegisterForm({ toast, onSuccess }: { toast: any; onSuccess: () => void 
               id="register-email"
               type="email"
               placeholder="seu@email.com"
-              pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"
-              title="Digite um email válido (ex: usuario@exemplo.com)"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              {...register('email')}
             />
+            {errors.email && (
+              <span className="text-xs text-red-500">{errors.email.message}</span>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="register-password">Senha</Label>
@@ -260,11 +272,11 @@ function RegisterForm({ toast, onSuccess }: { toast: any; onSuccess: () => void 
               id="register-password"
               type="password"
               placeholder="Ex: Senha123"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
+              {...register('password')}
             />
+            {errors.password && (
+              <span className="text-xs text-red-500">{errors.password.message}</span>
+            )}
             <p className="text-xs text-muted-foreground">
               Mínimo 6 caracteres, deve conter: maiúscula, minúscula e número
             </p>
@@ -275,13 +287,14 @@ function RegisterForm({ toast, onSuccess }: { toast: any; onSuccess: () => void 
               id="register-confirm-password"
               type="password"
               placeholder="Digite a senha novamente"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
+              {...register('confirmPassword')}
             />
+            {errors.confirmPassword && (
+              <span className="text-xs text-red-500">{errors.confirmPassword.message}</span>
+            )}
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Registrando...' : 'Criar Conta'}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? 'Registrando...' : 'Criar Conta'}
           </Button>
         </form>
       </CardContent>
