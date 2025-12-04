@@ -35,7 +35,6 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   }
 
   async login(user: any): Promise<LoginResponseDto> {
-    // ✅ CRITICAL: Validate email AND password
     const validUser = await this.usersService.validateUser(
       user.email,
       user.password,

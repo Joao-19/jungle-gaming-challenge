@@ -1,6 +1,7 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   CreateUserDto,
   LoginDto,
@@ -14,6 +15,7 @@ import {
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tentativas por minuto
   @Post('login')
   @ApiOperation({ summary: 'Autenticação de usuário' })
   @ApiBody({
@@ -34,6 +36,7 @@ export class AuthController {
     return this.authService.login(body);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 registros por minuto
   @Post('register')
   @ApiOperation({ summary: 'Registro de usuário' })
   @ApiBody({
@@ -85,6 +88,7 @@ export class AuthController {
     return this.authService.logout(body.userId);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 solicitações por minuto
   @Post('forgot-password')
   @ApiOperation({ summary: 'Solicitar reset de senha' })
   @ApiBody({
