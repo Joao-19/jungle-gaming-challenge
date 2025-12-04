@@ -24,7 +24,7 @@ export class NotificationsGateway
 
     if (userId) {
       this.userSockets.set(userId, client.id);
-      console.log(`Cliente conectado: ${client.id} (User: ${userId})`);
+      console.log(`Connected Client: ${client.id} (User: ${userId})`);
     }
   }
 
@@ -35,7 +35,7 @@ export class NotificationsGateway
 
     if (userId) {
       this.userSockets.delete(userId);
-      console.log(`Cliente desconectado: ${client.id}`);
+      console.log(`Disconnected Client: ${client.id}`);
     }
   }
 
@@ -44,9 +44,9 @@ export class NotificationsGateway
 
     if (socketId) {
       this.server.to(socketId).emit('notification', payload);
-      console.log(`Mensagem enviada via WebSocket para o usuário ${userId}`);
+      console.log(`Notification sent via WebSocket to user ${userId}`);
     } else {
-      console.log(`Usuário ${userId} não está conectado no WebSocket agora.`);
+      console.log(`User ${userId} is not connected to WebSocket now.`);
     }
   }
 

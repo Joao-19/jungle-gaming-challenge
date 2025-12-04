@@ -99,7 +99,6 @@ export class AuthService {
 
   async forgotPassword(email: string): Promise<{ message: string }> {
     try {
-      console.log('API-GATEWAY', email);
       const response = await lastValueFrom(
         this.httpService.post(`${this.AUTH_SERVICE_URL}/auth/forgot-password`, {
           email,

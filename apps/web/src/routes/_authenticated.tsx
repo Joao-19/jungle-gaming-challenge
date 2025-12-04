@@ -30,7 +30,7 @@ function AuthenticatedLayout() {
     });
 
     socket.on('connect', () => {
-      console.log('🟢 Conectado ao WebSocket!', socket.id);
+      console.log('WebSocket connected!', socket.id);
     });
 
     socket.on('notification', (data: any) => {
@@ -43,7 +43,7 @@ function AuthenticatedLayout() {
 
     return () => {
       socket.disconnect();
-      console.log('🔴 Desconectado do WebSocket');
+      console.log('WebSocket disconnected!');
     };
   }, [userId, toast]);
 

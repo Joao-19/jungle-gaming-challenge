@@ -81,8 +81,6 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
 
     // Merge and Sort
     const reversedActivity = useMemo(() => {
-        console.log("reversedActivity RECEBIDO");
-
         const historyItems = historyData?.pages.flatMap((page) => page.data.map((item: any) => ({ ...item, type: 'HISTORY' }))) || [];
         const commentItems = commentsData?.pages.flatMap((page) => page.data.map((item) => ({ ...item, type: 'COMMENT' as const }))) || [];
 

@@ -27,13 +27,10 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    console.log('🔌 [AuthService] Connecting to RabbitMQ...');
     await this.emailClient.connect();
-    console.log('✅ [AuthService] Connected to RabbitMQ successfully');
   }
 
   async onModuleDestroy() {
-    console.log('🔌 [AuthService] Disconnecting from RabbitMQ...');
     await this.emailClient.close();
   }
 
@@ -108,51 +105,27 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   }
 
   async forgotPassword(email: string): Promise<void> {
-    console.log(`🔍 [ForgotPassword] Searching for user with email: ${email}`);
-
     const user = await this.usersService.findOne({ email });
 
-    // Don't reveal if user exists for security reasons
     if (!user) {
-      console.log(`⚠️  [ForgotPassword] User not found with email: ${email}`);
       return;
     }
 
-    console.log(
-      `✅ [ForgotPassword] User found: ${user.username} (${user.id})`,
-    );
-
-    // Generate reset token
     const resetToken = randomUUID();
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-    console.log(`🔑 [ForgotPassword] Generated reset token: ${resetToken}`);
-    console.log(
-      `⏰ [ForgotPassword] Token expires at: ${resetTokenExpiry.toISOString()}`,
-    );
-
     try {
-      // Save token to database
       const updateResult = await this.usersService.update(user.id, {
         resetToken,
         resetTokenExpiry,
       });
 
-      console.log(`💾 [ForgotPassword] Database update result:`, updateResult);
-
-      // Emit event for email service
       this.emailClient.emit('password_reset_requested', {
         email: user.email,
         resetToken,
         username: user.username,
       });
-
-      console.log(
-        `📨 [ForgotPassword] Event emitted to RabbitMQ for email: ${email}`,
-      );
-      console.log(`🔑 Password reset requested for: ${email}`);
     } catch (error) {
-      console.error(`❌ [ForgotPassword] Error during password reset:`, error);
       throw error;
     }
   }
@@ -178,7 +151,5 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       resetToken: null,
       resetTokenExpiry: null,
     });
-
-    console.log(`✅ Password reset successfully for user: ${user.email}`);
   }
 }

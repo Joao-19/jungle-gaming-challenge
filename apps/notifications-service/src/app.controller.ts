@@ -8,8 +8,6 @@ export class AppController {
 
   @EventPattern('task_created')
   handleTaskCreated(@Payload() data: any) {
-    console.log('🔔 RabbitMQ recebeu (Created):', data.title);
-
     const recipients = [...new Set([data.userId, ...(data.assigneeIds || [])])];
 
     this.notificationsGateway.notifyUsers(recipients, {
@@ -21,15 +19,11 @@ export class AppController {
 
   @EventPattern('task_updated')
   handleTaskUpdated(@Payload() data: any) {
-    console.log('🔔 RabbitMQ recebeu (Updated):', data.title);
-
-    // Verifica se houve mudança de Status ou Atribuição
     const changes = data.changes || [];
     const shouldNotify =
       changes.includes('STATUS') || changes.includes('ASSIGNEES');
 
     if (!shouldNotify) {
-      console.log('🔕 Nenhuma mudança relevante para notificação.');
       return;
     }
 
@@ -45,8 +39,6 @@ export class AppController {
 
   @EventPattern('comment_added')
   handleCommentAdded(@Payload() data: any) {
-    console.log('Comment added:', data.comment.id);
-
     const { comment, recipients } = data;
 
     if (!recipients || recipients.length === 0) {
