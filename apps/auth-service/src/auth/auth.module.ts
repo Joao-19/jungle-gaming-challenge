@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtModuleOptions } from '@nestjs/jwt';
@@ -24,6 +25,21 @@ import { JwtModuleOptions } from '@nestjs/jwt';
         },
       }),
     }),
+    ClientsModule.register([
+      {
+        name: 'EMAIL_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: [
+            process.env.RABBITMQ_URL || 'amqp://admin:admin@localhost:5672',
+          ],
+          queue: 'email_queue',
+          queueOptions: {
+            durable: true,
+          },
+        },
+      },
+    ]),
   ],
   controllers: [AuthController],
   providers: [AuthService, RefreshTokenStrategy, JwtStrategy],

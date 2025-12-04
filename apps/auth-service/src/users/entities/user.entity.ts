@@ -14,6 +14,12 @@ export class User {
   @Column({ nullable: true })
   currentRefreshToken: string;
 
+  @Column({ nullable: true })
+  resetToken?: string;
+
+  @Column({ type: 'timestamp', nullable: true })
+  resetTokenExpiry?: Date;
+
   @Column({ unique: true })
   username: string;
 

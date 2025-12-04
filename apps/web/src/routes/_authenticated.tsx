@@ -1,9 +1,11 @@
-import { createFileRoute, redirect, Outlet } from '@tanstack/react-router';
+import { createFileRoute, redirect, Outlet, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { ModeToggle } from '@/components/mode-toggle';
+import { FiLogOut } from 'react-icons/fi';
+import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute('/_authenticated')({
   beforeLoad: ({ context }) => {
@@ -15,8 +17,9 @@ export const Route = createFileRoute('/_authenticated')({
 });
 
 function AuthenticatedLayout() {
-  const { userId } = useAuth();
+  const { userId, logout } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!userId) return;
@@ -27,7 +30,7 @@ function AuthenticatedLayout() {
     });
 
     socket.on('connect', () => {
-      console.log('🟢 Conectado ao WebSocket!', socket.id);
+      console.log('WebSocket connected!', socket.id);
     });
 
     socket.on('notification', (data: any) => {
@@ -40,9 +43,14 @@ function AuthenticatedLayout() {
 
     return () => {
       socket.disconnect();
-      console.log('🔴 Desconectado do WebSocket');
+      console.log('WebSocket disconnected!');
     };
   }, [userId, toast]);
+
+  const handleLogout = async () => {
+    await logout();
+    navigate({ to: '/login' });
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background">
@@ -53,6 +61,15 @@ function AuthenticatedLayout() {
             ID: {userId?.slice(0, 8)}...
           </div>
           <ModeToggle />
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={handleLogout}
+            title="Logout"
+          >
+            <FiLogOut className="h-[1.2rem] w-[1.2rem]" />
+            <span className="sr-only">Logout</span>
+          </Button>
         </div>
       </header>
 

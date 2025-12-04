@@ -6,7 +6,7 @@ services:
     image: postgres:17.5-alpine3.21
     container_name: db
     ports:
-      - '5432:5432'
+      - "5432:5432"
     restart: always
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -22,8 +22,8 @@ services:
     container_name: rabbitmq
     restart: always
     ports:
-      - '5672:5672'
-      - '15672:15672'
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin
@@ -41,17 +41,18 @@ services:
       dockerfile: apps/auth-service/Dockerfile
     container_name: auth-service
     ports:
-      - '3002:3002'
+      - "3002:3002"
     depends_on:
       - db
     environment:
       # Sobrescreve o .env local para usar a rede interna do Docker
-      POSTGRES_HOST: db 
+      POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: challenge_db
       JWT_SECRET: super-secret-key-mudar-depois
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     networks:
       - jungle-network
 
@@ -61,7 +62,7 @@ services:
       dockerfile: apps/tasks-service/Dockerfile
     container_name: tasks-service
     ports:
-      - '3003:3003'
+      - "3003:3003"
     depends_on:
       - db
       - rabbitmq
@@ -81,21 +82,39 @@ services:
       dockerfile: apps/notifications-service/Dockerfile
     container_name: notifications-service
     ports:
-      - '3004:3004'
+      - "3004:3004"
     depends_on:
       - rabbitmq
     environment:
       RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     networks:
       - jungle-network
-
+  email-service:
+    build:
+      context: .
+      dockerfile: apps/email-service/Dockerfile
+    container_name: email-service
+    ports:
+      - "3007:3007"
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      MAIL_FROM: Task Manager <noreply@taskmanager.com>
+      WEB_URL: http://localhost:5173
+    networks:
+      - jungle-network
   api-gateway:
     build:
       context: .
       dockerfile: apps/api-gateway/Dockerfile
     container_name: api-gateway
     ports:
-      - '3001:3001'
+      - "3001:3001"
     depends_on:
       - auth-service
       - tasks-service
@@ -118,7 +137,7 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: web
     ports:
-      - '5173:5173'
+      - "5173:5173"
     environment:
       # O Frontend roda no navegador do cliente, então ele continua chamando localhost
       # mas expomos isso aqui caso precise buildar

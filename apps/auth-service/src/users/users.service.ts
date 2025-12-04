@@ -62,7 +62,7 @@ export class UsersService {
     };
   }
 
-  findOne(form: { id?: string; email?: string }) {
+  findOne(form: { id?: string; email?: string; resetToken?: string }) {
     return this.usersRepository.findOne({ where: form });
   }
 

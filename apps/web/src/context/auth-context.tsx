@@ -1,11 +1,12 @@
 import { createContext, useContext, useState } from 'react';
+import axios from 'axios';
 
 export interface AuthContextType {
   isAuthenticated: boolean;
   token: string | null;
   userId: string | null;
   login: (token: string, refreshToken: string, userId: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -25,11 +26,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserId(newUserId);
   };
 
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('user_id');
-    setToken(null);
-    setUserId(null);
+  const logout = async () => {
+    try {
+      // Chama o backend para invalidar o token
+      if (userId) {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+        await axios.post(`${apiUrl}/auth/logout`, { userId });
+      }
+    } catch (error) {
+      // Se falhar, ainda assim fazemos logout local
+      console.error('Erro ao fazer logout no backend:', error);
+    } finally {
+      // Limpa TUDO do localStorage
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user_id');
+      setToken(null);
+      setUserId(null);
+    }
   };
 
   return (
