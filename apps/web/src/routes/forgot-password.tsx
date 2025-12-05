@@ -39,9 +39,9 @@ function ForgotPasswordPage() {
             await api.post('/auth/forgot-password', data);
 
             toast({
+                variant: "default",
                 title: '✅ Email enviado!',
                 description: 'Se sua conta existir, você receberá instruções para redefinir sua senha.',
-                className: 'bg-green-50 border-green-200',
             });
 
             setTimeout(() => navigate({ to: '/login' }), 2000);

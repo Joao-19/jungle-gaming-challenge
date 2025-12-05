@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import axios from 'axios';
+import { api } from "@/lib/api";
 
 export interface AuthContextType {
   isAuthenticated: boolean;
@@ -30,8 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // Chama o backend para invalidar o token
       if (userId) {
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-        await axios.post(`${apiUrl}/auth/logout`, { userId });
+        await api.post(`/auth/logout`, { userId });
       }
     } catch (error) {
       // Se falhar, ainda assim fazemos logout local

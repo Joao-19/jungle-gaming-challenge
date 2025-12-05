@@ -1,13 +1,14 @@
 import { Controller } from "@nestjs/common";
 import { EventPattern, Payload } from "@nestjs/microservices";
 import { MailerService } from "@nestjs-modules/mailer";
+import { PasswordResetEventDto } from "@repo/dtos";
 
 @Controller()
 export class AppController {
   constructor(private readonly mailerService: MailerService) {}
 
   @EventPattern("password_reset_requested")
-  async handlePasswordReset(@Payload() data: any) {
+  async handlePasswordReset(@Payload() data: PasswordResetEventDto) {
     const { email, resetToken, username } = data;
 
     if (!email || !resetToken || !username) {

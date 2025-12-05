@@ -1,4 +1,11 @@
-import { Controller, Get, UseGuards, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  Headers,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { AuthGuard } from '@nestjs/passport';
 import {
@@ -7,23 +14,38 @@ import {
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { UserResponseDto, UserQueryDto } from '@repo/dtos';
+import { UserQueryDto, UserResponseDto } from '@repo/dtos';
 
 @ApiTags('Users')
 @ApiBearerAuth()
+@UseGuards(AuthGuard('jwt'))
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @UseGuards(AuthGuard('jwt'))
   @Get()
-  @ApiOperation({ summary: 'Listar todos os usuários' })
+  @ApiOperation({ summary: 'List all users' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de usuários.',
+    description: 'Users list.',
     type: [UserResponseDto],
   })
-  findAll(@Query() query: UserQueryDto) {
-    return this.usersService.findAll(query);
+  findAll(
+    @Query() query: UserQueryDto,
+    @Headers('authorization') auth: string,
+  ) {
+    const token = auth?.replace('Bearer ', '');
+    return this.usersService.findAll(query, token);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Get user by ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'User details.',
+    type: UserResponseDto,
+  })
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(id);
   }
 }

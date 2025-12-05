@@ -1,19 +1,23 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import {
   CreateUserDto,
   LoginDto,
   LoginResponseDto,
   UserResponseDto,
   RefreshTokenDto,
+  LogoutDto,
 } from '@repo/dtos';
+import { AuthGuard } from '@nestjs/passport';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 tentativas por minuto
   @Post('login')
   @ApiOperation({ summary: 'Autenticação de usuário' })
   @ApiBody({
@@ -34,6 +38,7 @@ export class AuthController {
     return this.authService.login(body);
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 registros por minuto
   @Post('register')
   @ApiOperation({ summary: 'Registro de usuário' })
   @ApiBody({
@@ -68,6 +73,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Logout de usuário' })
   @ApiBody({
     schema: {
@@ -81,10 +87,15 @@ export class AuthController {
     status: 200,
     description: 'Logout realizado com sucesso',
   })
-  logout(@Body() body: { userId: string }): Promise<{ message: string }> {
-    return this.authService.logout(body.userId);
+  logout(
+    @Body() body: LogoutDto,
+    @Headers('authorization') auth: string,
+  ): Promise<{ message: string }> {
+    const token = auth?.replace('Bearer ', '');
+    return this.authService.logout({ userId: body.userId, token });
   }
 
+  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 solicitações por minuto
   @Post('forgot-password')
   @ApiOperation({ summary: 'Solicitar reset de senha' })
   @ApiBody({

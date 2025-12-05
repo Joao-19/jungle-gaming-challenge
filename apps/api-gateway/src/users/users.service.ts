@@ -17,10 +17,13 @@ export class UsersService {
       'http://localhost:3002';
   }
 
-  async findAll(query: UserQueryDto) {
+  async findAll(query: UserQueryDto, token: string) {
     try {
       const response = await lastValueFrom(
-        this.httpService.get(`${this.authServiceUrl}/users`, { params: query }),
+        this.httpService.get(`${this.authServiceUrl}/users`, {
+          params: query,
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       );
       return response.data;
     } catch (error) {
@@ -30,15 +33,17 @@ export class UsersService {
       );
     }
   }
-  async findOne(id: string) {
+  async findOne(id: string, token?: string) {
     try {
+      const config = token
+        ? { headers: { Authorization: `Bearer ${token}` } }
+        : {};
       const response = await lastValueFrom(
-        this.httpService.get(`${this.authServiceUrl}/users/${id}`),
+        this.httpService.get(`${this.authServiceUrl}/users/${id}`, config),
       );
       return response.data;
     } catch (error) {
-      // Se não achar, retorna null ou lança erro?
-      // Melhor retornar null para não quebrar o histórico se o usuário foi deletado
+      // Se não achar, retorna null para não quebrar o histórico se o usuário foi deletado
       return null;
     }
   }

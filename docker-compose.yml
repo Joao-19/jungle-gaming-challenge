@@ -11,9 +11,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_PASSWORD: password
-      POSTGRES_USER: postgres
-      POSTGRES_DB: challenge_db
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
     networks:
       - jungle-network
 
@@ -25,8 +30,13 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: admin
-      RABBITMQ_DEFAULT_PASS: admin
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -40,19 +50,24 @@ services:
       context: . # Contexto é a raiz para pegar o pnpm-lock.yaml
       dockerfile: apps/auth-service/Dockerfile
     container_name: auth-service
-    ports:
-      - "3002:3002"
+    # ports: # Não expor - apenas comunicação interna
+    #   - "3002:3002"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
-      # Sobrescreve o .env local para usar a rede interna do Docker
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: challenge_db
-      JWT_SECRET: super-secret-key-mudar-depois
-      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      RABBITMQ_URL: ${RABBITMQ_URL}
     networks:
       - jungle-network
 
@@ -61,18 +76,24 @@ services:
       context: .
       dockerfile: apps/tasks-service/Dockerfile
     container_name: tasks-service
-    ports:
-      - "3003:3003"
+    # ports: # Não expor - apenas comunicação interna
+    #   - "3003:3003"
     depends_on:
-      - db
-      - rabbitmq
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
-      POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: challenge_db
-      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      RABBITMQ_URL: ${RABBITMQ_URL}
     networks:
       - jungle-network
 
@@ -81,12 +102,14 @@ services:
       context: .
       dockerfile: apps/notifications-service/Dockerfile
     container_name: notifications-service
-    ports:
+    ports: # Não expor - apenas comunicação interna
       - "3004:3004"
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     environment:
-      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      CORS_ORIGIN: ${CORS_ORIGIN}
     networks:
       - jungle-network
   email-service:
@@ -94,18 +117,19 @@ services:
       context: .
       dockerfile: apps/email-service/Dockerfile
     container_name: email-service
-    ports:
-      - "3007:3007"
+    # ports: # Não expor - apenas comunicação interna
+    #   - "3007:3007"
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
     environment:
-      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
-      SMTP_HOST: smtp.gmail.com
-      SMTP_PORT: 587
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
-      MAIL_FROM: Task Manager <noreply@taskmanager.com>
-      WEB_URL: http://localhost:5173
+      MAIL_FROM: ${MAIL_FROM}
+      WEB_URL: ${WEB_URL}
     networks:
       - jungle-network
   api-gateway:
@@ -116,15 +140,30 @@ services:
     ports:
       - "3001:3001"
     depends_on:
-      - auth-service
-      - tasks-service
+      auth-service:
+        condition: service_started
+      tasks-service:
+        condition: service_started
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 3
+      start_period: 10s
     environment:
       # O Gateway chama os serviços pelos nomes de container
       AUTH_SERVICE_URL: http://auth-service:3002
       TASKS_SERVICE_URL: http://tasks-service:3003
-      JWT_SECRET: super-secret-key-mudar-depois
-      CORS_ORIGIN: http://localhost:5173
-      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      PORT: ${API_GATEWAY_PORT}
     networks:
       - jungle-network
 
@@ -137,11 +176,14 @@ services:
       dockerfile: apps/web/Dockerfile
     container_name: web
     ports:
-      - "5173:5173"
+      - "${WEB_PORT}:5173"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
     environment:
       # O Frontend roda no navegador do cliente, então ele continua chamando localhost
       # mas expomos isso aqui caso precise buildar
-      VITE_API_URL: http://localhost:3001
+      VITE_API_URL: http://localhost:${API_GATEWAY_PORT}
     networks:
       - jungle-network
 

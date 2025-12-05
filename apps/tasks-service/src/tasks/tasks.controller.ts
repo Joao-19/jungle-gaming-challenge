@@ -7,16 +7,24 @@ import {
   Patch,
   Delete,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { TasksService } from './tasks.service';
-import { GetTasksFilterDto, UpdateTaskDto } from '@repo/dtos';
+import {
+  GetTasksFilterDto,
+  UpdateTaskDto,
+  CreateTaskDto,
+  CreateCommentDto,
+} from '@repo/dtos';
 
 @Controller('tasks')
+@UseGuards(AuthGuard('jwt')) // Defense in Depth: Validate JWT even on internal network
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  create(@Body() body: any) {
+  create(@Body() body: CreateTaskDto & { userId: string }) {
     const { userId, ...createTaskDto } = body;
     return this.tasksService.create(createTaskDto, userId);
   }
@@ -56,7 +64,7 @@ export class TasksController {
   @Post(':id/comments')
   addComment(
     @Param('id') id: string,
-    @Body() body: { userId: string; content: string },
+    @Body() body: CreateCommentDto & { userId: string },
   ) {
     return this.tasksService.addComment(id, body.userId, body.content);
   }

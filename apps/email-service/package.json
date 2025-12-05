@@ -28,6 +28,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@types/express": "^5.0.0",
+    "@repo/dtos": "workspace:*",
     "@types/node": "^22.10.1",
     "@types/nodemailer": "^6.4.16",
     "source-map-support": "^0.5.21",

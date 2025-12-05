@@ -1,13 +1,18 @@
 import { Controller } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { NotificationsGateway } from './notifications.gateway'; // Importe
+import { NotificationsGateway } from './notifications.gateway';
+import {
+  TaskCreatedEventDto,
+  TaskUpdatedEventDto,
+  CommentAddedEventDto,
+} from '@repo/dtos';
 
 @Controller()
 export class AppController {
   constructor(private readonly notificationsGateway: NotificationsGateway) {} // Injete
 
   @EventPattern('task_created')
-  handleTaskCreated(@Payload() data: any) {
+  handleTaskCreated(@Payload() data: TaskCreatedEventDto) {
     const recipients = [...new Set([data.userId, ...(data.assigneeIds || [])])];
 
     this.notificationsGateway.notifyUsers(recipients, {
@@ -18,7 +23,7 @@ export class AppController {
   }
 
   @EventPattern('task_updated')
-  handleTaskUpdated(@Payload() data: any) {
+  handleTaskUpdated(@Payload() data: TaskUpdatedEventDto) {
     const changes = data.changes || [];
     const shouldNotify =
       changes.includes('STATUS') || changes.includes('ASSIGNEES');
@@ -38,16 +43,17 @@ export class AppController {
   }
 
   @EventPattern('comment_added')
-  handleCommentAdded(@Payload() data: any) {
-    const { comment, recipients } = data;
+  handleCommentAdded(@Payload() data: CommentAddedEventDto) {
+    const { taskTitle, taskId, recipients } = data;
 
     if (!recipients || recipients.length === 0) {
       return;
     }
 
     this.notificationsGateway.notifyUsers(recipients, {
-      type: 'COMMENT',
-      ...comment,
+      type: 'COMMENT_ADDED',
+      title: `${taskTitle} tem um comentário!`,
+      taskId: taskId,
     });
   }
 }

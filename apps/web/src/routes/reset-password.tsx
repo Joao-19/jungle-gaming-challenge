@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 
 export const Route = createFileRoute('/reset-password')({
     component: ResetPasswordPage,
+    validateSearch: z.object({
+        token: z.string().min(1, 'Token é obrigatório'),
+    }),
 });
 
 const resetPasswordSchema = z.object({
@@ -55,9 +58,9 @@ function ResetPasswordPage() {
             });
 
             toast({
+                variant: "default",
                 title: '✅ Senha redefinida!',
                 description: 'Sua senha foi alterada com sucesso. Você já pode fazer login.',
-                className: 'bg-green-50 border-green-200',
             });
 
             setTimeout(() => navigate({ to: '/login' }), 2000);

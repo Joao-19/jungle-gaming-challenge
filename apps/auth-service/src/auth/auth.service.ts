@@ -35,18 +35,20 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   }
 
   async login(user: any): Promise<LoginResponseDto> {
-    const findUserByEmail = await this.usersService.findOne({
-      email: user.email,
-    });
-    if (!findUserByEmail) throw new ForbiddenException('Access Denied');
-
-    const tokens = await this.getTokens(
-      findUserByEmail.id,
-      findUserByEmail.email,
+    const validUser = await this.usersService.validateUser(
+      user.email,
+      user.password,
     );
-    await this.updateRefreshToken(findUserByEmail.id, tokens.refreshToken);
+
+    if (!validUser) {
+      throw new ForbiddenException('Invalid email or password');
+    }
+
+    const tokens = await this.getTokens(validUser.id, validUser.email);
+    await this.updateRefreshToken(validUser.id, tokens.refreshToken);
+
     return new LoginResponseDto(
-      new UserResponseDto(findUserByEmail),
+      new UserResponseDto(validUser),
       tokens.accessToken,
       tokens.refreshToken,
     );

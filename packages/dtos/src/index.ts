@@ -6,3 +6,6 @@ export * from "./user";
 
 // task
 export * from "./task";
+
+// events
+export * from "./events";

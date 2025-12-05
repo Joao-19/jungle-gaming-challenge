@@ -9,6 +9,7 @@ import {
   Patch,
   Delete,
   Query,
+  Headers,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -41,9 +42,14 @@ export class TasksController {
     description: 'Tarefa criada com sucesso.',
     type: TaskResponseDto,
   })
-  create(@Body() body: CreateTaskDto, @Request() req: any) {
+  create(
+    @Body() body: CreateTaskDto,
+    @Request() req: any,
+    @Headers('authorization') auth: string,
+  ) {
     const userId = req.user.userId;
-    return this.tasksService.createTask(body, userId);
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.createTask(body, userId, token);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -54,9 +60,14 @@ export class TasksController {
     description: 'Lista de tarefas.',
     type: [TaskResponseDto],
   })
-  findAll(@Query() filters: GetTasksFilterDto, @Request() req: any) {
+  findAll(
+    @Query() filters: GetTasksFilterDto,
+    @Request() req: any,
+    @Headers('authorization') auth: string,
+  ) {
     const userId = req.user.userId;
-    return this.tasksService.findAll(filters, userId);
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.findAll(filters, userId, token);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -67,8 +78,9 @@ export class TasksController {
     description: 'Detalhes da tarefa.',
     type: TaskResponseDto,
   })
-  findOne(@Param('id') id: string) {
-    return this.tasksService.findOne(id);
+  findOne(@Param('id') id: string, @Headers('authorization') auth: string) {
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.findOne(id, token);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -83,9 +95,11 @@ export class TasksController {
     @Param('id') id: string,
     @Body() body: UpdateTaskDto,
     @Request() req: any,
+    @Headers('authorization') auth: string,
   ) {
     const userId = req.user.userId;
-    return this.tasksService.update(id, body, userId);
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.update(id, body, userId, token);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -95,9 +109,14 @@ export class TasksController {
     status: 200,
     description: 'Tarefa removida.',
   })
-  remove(@Param('id') id: string, @Request() req: any) {
+  remove(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Headers('authorization') auth: string,
+  ) {
     const userId = req.user.userId;
-    return this.tasksService.remove(id, userId);
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.remove(id, userId, token);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -107,8 +126,13 @@ export class TasksController {
     status: 200,
     description: 'Histórico da tarefa.',
   })
-  getHistory(@Param('id') id: string, @Query() filters: GetTaskHistoryDto) {
-    return this.tasksService.getHistory(id, filters);
+  getHistory(
+    @Param('id') id: string,
+    @Query() filters: GetTaskHistoryDto,
+    @Headers('authorization') auth: string,
+  ) {
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.getHistory(id, filters, token);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -119,16 +143,23 @@ export class TasksController {
     @Param('id') id: string,
     @Body() body: CreateCommentDto,
     @Request() req: any,
+    @Headers('authorization') auth: string,
   ) {
     const userId = req.user.userId;
-    return this.tasksService.addComment(id, userId, body.content);
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.addComment(id, userId, body.content, token);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Get(':id/comments')
   @ApiOperation({ summary: 'Listar comentários' })
   @ApiResponse({ status: 200, description: 'Lista de comentários.' })
-  getComments(@Param('id') id: string, @Query() filters: GetTasksFilterDto) {
-    return this.tasksService.getComments(id, filters);
+  getComments(
+    @Param('id') id: string,
+    @Query() filters: GetTasksFilterDto,
+    @Headers('authorization') auth: string,
+  ) {
+    const token = auth?.replace('Bearer ', '');
+    return this.tasksService.getComments(id, filters, token);
   }
 }

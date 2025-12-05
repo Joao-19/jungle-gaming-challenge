@@ -8,7 +8,8 @@ import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
+    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    credentials: true,
   },
 })
 export class NotificationsGateway
@@ -21,10 +22,18 @@ export class NotificationsGateway
 
   handleConnection(client: Socket) {
     const userId = client.handshake.query.userId as string;
+    const origin = client.handshake.headers.origin;
+
+    console.log(`🔌 WebSocket connection from origin: ${origin}`);
+    console.log(
+      `📋 CORS_ORIGIN expected: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`,
+    );
 
     if (userId) {
       this.userSockets.set(userId, client.id);
-      console.log(`Connected Client: ${client.id} (User: ${userId})`);
+      console.log(`✅ Connected Client: ${client.id} (User: ${userId})`);
+    } else {
+      console.log(`⚠️  Client ${client.id} connected without userId`);
     }
   }
 

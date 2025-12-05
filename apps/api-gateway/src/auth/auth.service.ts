@@ -7,6 +7,7 @@ import {
   LoginDto,
   LoginResponseDto,
   UserResponseDto,
+  LogoutDto,
 } from '@repo/dtos';
 
 @Injectable()
@@ -81,15 +82,27 @@ export class AuthService {
     }
   }
 
-  async logout(userId: string): Promise<{ message: string }> {
+  async logout(form: LogoutDto): Promise<{ message: string }> {
     try {
+      console.log(form);
+
+      const { userId, token } = form;
       const response = await lastValueFrom(
-        this.httpService.post(`${this.AUTH_SERVICE_URL}/auth/logout`, {
-          userId,
-        }),
+        this.httpService.post(
+          `${this.AUTH_SERVICE_URL}/auth/logout`,
+          {
+            userId,
+          },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        ),
       );
       return response.data;
     } catch (error) {
+      console.log(error);
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,
