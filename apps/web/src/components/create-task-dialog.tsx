@@ -67,9 +67,9 @@ export function CreateTaskDialog({ children }: { children: React.ReactNode }) {
             await api.post('/tasks', data);
 
             toast({
+                variant: 'default',
                 title: 'Tarefa criada!',
                 description: 'Sua tarefa foi adicionada com sucesso.',
-                className: 'bg-green-50 border-green-200',
             });
 
             // Invalida o cache para recarregar a lista

@@ -106,9 +106,9 @@ export function TaskDetailsDialog({
             await api.patch(`/tasks/${task.id}`, data);
 
             toast({
+                variant: 'default',
                 title: 'Tarefa atualizada!',
-                description: 'As alterações foram salvas com sucesso.',
-                className: 'bg-green-50 border-green-200',
+                description: 'As alterações foram salvas com sucesso.'
             });
 
             queryClient.invalidateQueries({ queryKey: ['tasks'] });

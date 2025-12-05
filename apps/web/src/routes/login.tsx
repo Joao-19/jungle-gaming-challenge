@@ -142,6 +142,7 @@ function LoginForm({ login, toast }: { login: any; toast: any }) {
 
       login(res.data.accessToken, res.data.refreshToken, payload.sub);
       toast({
+        variant: "default",
         title: 'Sucesso!',
         description: 'Login realizado com sucesso.',
       });
@@ -215,6 +216,7 @@ function RegisterForm({ toast, onSuccess }: { toast: any; onSuccess: () => void 
       await api.post('/auth/register', registerData);
 
       toast({
+        variant: "default",
         title: 'Sucesso!',
         description: 'Conta criada com sucesso. Faça login para continuar.',
       });

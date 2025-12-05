@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ThrottlerExceptionFilter } from './filters/throttler-exception.filter';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +12,21 @@ async function bootstrap() {
   const corsOrigin =
     configService.get<string>('CORS_ORIGIN') || 'http://localhost:5173';
   const port = configService.get<string>('PORT') || 3001;
+
+  // SECURITY HEADERS
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"], // Permite Swagger UI
+          scriptSrc: ["'self'", "'unsafe-inline'"], // Permite Swagger UI
+          imgSrc: ["'self'", 'data:', 'https:'],
+        },
+      },
+      crossOriginEmbedderPolicy: false, // Permite CORS funcionar
+    }),
+  );
 
   // CORS
   app.enableCors({
@@ -37,7 +53,8 @@ async function bootstrap() {
 
   await app.listen(port);
   console.log(
-    `Gateway running on port ${port} allowing CORS from: ${corsOrigin}`,
+    `✅ Gateway running on port ${port} allowing CORS from: ${corsOrigin}`,
   );
+  console.log(`🛡️  Security headers enabled (Helmet)`);
 }
 bootstrap();

@@ -35,6 +35,7 @@ function AuthenticatedLayout() {
 
     socket.on('notification', (data: any) => {
       toast({
+        variant: 'default',
         title: "Nova Atualização",
         description: data.title,
         duration: 5000,

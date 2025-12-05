@@ -39,15 +39,16 @@ export class AppController {
 
   @EventPattern('comment_added')
   handleCommentAdded(@Payload() data: any) {
-    const { comment, recipients } = data;
+    const { taskTitle, taskId, recipients } = data;
 
     if (!recipients || recipients.length === 0) {
       return;
     }
 
     this.notificationsGateway.notifyUsers(recipients, {
-      type: 'COMMENT',
-      ...comment,
+      type: 'COMMENT_ADDED',
+      title: `${taskTitle} tem um comentário!`,
+      taskId: taskId,
     });
   }
 }

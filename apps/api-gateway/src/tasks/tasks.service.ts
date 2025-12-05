@@ -18,12 +18,13 @@ export class TasksService {
       this.configService.get<string>('TASKS_SERVICE_URL') ||
       'http://localhost:3003';
   }
-  async createTask(data: any, userId: string) {
+  async createTask(data: any, userId: string, token: string) {
     try {
       const payload = { ...data, userId };
-
       const response = await lastValueFrom(
-        this.httpService.post(`${this.tasksServiceUrl}/tasks`, payload),
+        this.httpService.post(`${this.tasksServiceUrl}/tasks`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       );
       return response.data;
     } catch (error) {
@@ -34,11 +35,12 @@ export class TasksService {
     }
   }
 
-  async findAll(filters: any, userId: string) {
+  async findAll(filters: any, userId: string, token: string) {
     try {
       const response = await lastValueFrom(
         this.httpService.get(`${this.tasksServiceUrl}/tasks`, {
           params: { ...filters, userId },
+          headers: { Authorization: `Bearer ${token}` },
         }),
       );
       return response.data;
@@ -50,10 +52,12 @@ export class TasksService {
     }
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, token: string) {
     try {
       const response = await lastValueFrom(
-        this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}`),
+        this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       );
       return response.data;
     } catch (error) {
@@ -64,11 +68,15 @@ export class TasksService {
     }
   }
 
-  async update(id: string, data: any, userId: string) {
+  async update(id: string, data: any, userId: string, token: string) {
     try {
       const payload = { ...data, userId };
+
+      console.log(payload);
       const response = await lastValueFrom(
-        this.httpService.patch(`${this.tasksServiceUrl}/tasks/${id}`, payload),
+        this.httpService.patch(`${this.tasksServiceUrl}/tasks/${id}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
       );
       return response.data;
     } catch (error) {
@@ -79,11 +87,12 @@ export class TasksService {
     }
   }
 
-  async remove(id: string, userId: string) {
+  async remove(id: string, userId: string, token: string) {
     try {
       const response = await lastValueFrom(
         this.httpService.delete(`${this.tasksServiceUrl}/tasks/${id}`, {
           params: { userId },
+          headers: { Authorization: `Bearer ${token}` },
         }),
       );
       return response.data;
@@ -95,11 +104,12 @@ export class TasksService {
     }
   }
 
-  async getHistory(id: string, filters: any) {
+  async getHistory(id: string, filters: any, token: string) {
     try {
       const response = await lastValueFrom(
         this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}/history`, {
           params: filters,
+          headers: { Authorization: `Bearer ${token}` },
         }),
       );
 
@@ -126,13 +136,14 @@ export class TasksService {
     }
   }
 
-  async addComment(id: string, userId: string, content: string) {
+  async addComment(id: string, userId: string, content: string, token: string) {
     try {
       const response = await lastValueFrom(
-        this.httpService.post(`${this.tasksServiceUrl}/tasks/${id}/comments`, {
-          userId,
-          content,
-        }),
+        this.httpService.post(
+          `${this.tasksServiceUrl}/tasks/${id}/comments`,
+          { userId, content },
+          { headers: { Authorization: `Bearer ${token}` } },
+        ),
       );
       return response.data;
     } catch (error) {
@@ -143,11 +154,12 @@ export class TasksService {
     }
   }
 
-  async getComments(id: string, filters: any) {
+  async getComments(id: string, filters: any, token: string) {
     try {
       const response = await lastValueFrom(
         this.httpService.get(`${this.tasksServiceUrl}/tasks/${id}/comments`, {
           params: filters,
+          headers: { Authorization: `Bearer ${token}` },
         }),
       );
 

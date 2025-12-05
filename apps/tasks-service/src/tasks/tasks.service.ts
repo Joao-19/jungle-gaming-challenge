@@ -41,12 +41,18 @@ export class TasksService {
     });
     const savedComment = await this.commentsRepository.save(comment);
 
-    // Determine recipients: Owner + Assignees
-    const recipients = [...new Set([task.userId, ...(task.assigneeIds || [])])];
+    // Determine recipients: Owner + Assignees (exclude comment author)
+    const recipients = [
+      ...new Set([task.userId, ...(task.assigneeIds || [])]),
+    ].filter(
+      (id) => id !== userId, // Não notifica quem comentou
+    );
 
-    // Emit event for real-time updates with recipients
+    // Emit event for real-time updates with task title
     this.client.emit('comment_added', {
       comment: savedComment,
+      taskTitle: task.title, // ✅ Adiciona o título da task
+      taskId: task.id,
       recipients,
     });
 
