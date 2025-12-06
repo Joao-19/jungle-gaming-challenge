@@ -5,7 +5,7 @@ import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/composables/UI/use-toast';
 import { ModeToggle } from '@/components/mode-toggle';
 import { FiLogOut } from 'react-icons/fi';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/buttons/button';
 
 export const Route = createFileRoute('/dashboard')({
   beforeLoad: ({ context }) => {

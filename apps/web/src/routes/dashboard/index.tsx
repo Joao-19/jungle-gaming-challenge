@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/buttons/button';
 import { CreateTaskDialog } from './-components/create-task-dialog';
 import { TasksTable } from './-components/tasks-table';
 export const Route = createFileRoute('/dashboard/')({

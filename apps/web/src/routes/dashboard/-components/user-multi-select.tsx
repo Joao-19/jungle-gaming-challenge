@@ -3,7 +3,7 @@ import { Check, ChevronsUpDown } from 'lucide-react';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useDebounce } from '@/composables/UI/use-debounce';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/buttons/button';
 import {
     Command,
     CommandEmpty,
@@ -11,7 +11,7 @@ import {
     CommandInput,
     CommandItem,
     CommandList,
-} from '@/components/ui/command';
+} from '@/components/ui/form/command';
 import {
     Popover,
     PopoverContent,

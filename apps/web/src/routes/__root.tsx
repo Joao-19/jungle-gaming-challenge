@@ -2,7 +2,7 @@ import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { Toaster } from '@/components/ui/toaster';
 import type { AuthContextType } from '@/context/auth-context';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/buttons/button';
 
 interface MyRouterContext {
   auth: AuthContextType;

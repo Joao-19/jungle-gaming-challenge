@@ -4,9 +4,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { axiosInstance as api } from '@/composables/Services/Http/use-http';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/buttons/button';
+import { Input } from '@/components/ui/form/input';
+import { Label } from '@/components/ui/form/label';
 import { useToast } from '@/composables/UI/use-toast';
 
 export const Route = createFileRoute('/reset-password')({

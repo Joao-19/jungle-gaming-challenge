@@ -8,15 +8,15 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
+import { Input } from "@/components/ui/form/input";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/form/select";
+import { Button } from "@/components/ui/buttons/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { TaskStatus, TaskPriority } from "@repo/dtos";

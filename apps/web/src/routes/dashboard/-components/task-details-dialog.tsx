@@ -10,17 +10,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/buttons/button';
+import { Input } from '@/components/ui/form/input';
+import { Textarea } from '@/components/ui/form/textarea';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/form/select';
+import { Label } from '@/components/ui/form/label';
 import { UserMultiSelect } from './user-multi-select';
 import { TaskHistoryList } from './task-history-list';
 import { axiosInstance as api } from '@/composables/Services/Http/use-http';
