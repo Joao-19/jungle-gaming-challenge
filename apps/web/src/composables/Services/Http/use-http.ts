@@ -1,5 +1,58 @@
 import { useCallback, useState } from "react";
-import type { AxiosResponse } from "axios";
+import { type AxiosResponse } from "axios";
+
+// --- Axios Configuration (Moved from lib/api.ts) ---
+
+// --- Axios Configuration (Moved from lib/api.ts) ---
+
+import http from "./index";
+
+export const axiosInstance = http;
+
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`; // Fix: Authorization header
+  }
+  return config;
+});
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (!refreshToken) throw new Error("Sem refresh token");
+
+        const { data } = await http.post("/auth/refresh", {
+          refreshToken,
+        });
+
+        localStorage.setItem("auth_token", data.accessToken);
+        localStorage.setItem("refresh_token", data.refreshToken);
+
+        originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        localStorage.removeItem("auth_token");
+        localStorage.removeItem("refresh_token");
+        localStorage.removeItem("user_id");
+        localStorage.removeItem("user");
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// --- Hook Implementation ---
 
 export interface ApiError {
   message: string;
@@ -37,8 +90,7 @@ export function useBaseHttp<Response, Form, DefaultValue>(
       setLoading(true);
       setError(null);
       try {
-        // A autenticação (Bearer token) é injetada automaticamente pelo interceptor em globalApi (@/lib/api)
-        // O refresh token também é tratado automaticamente lá.
+        // A autenticação agora é tratada automaticamente pelo interceptor acima.
 
         const res = await apiFunction(form);
 
@@ -50,8 +102,6 @@ export function useBaseHttp<Response, Form, DefaultValue>(
           "headers" in res
         ) {
           const axiosRes = res as AxiosResponse<Response>;
-          // Nota: O token updates são feitos via interceptor ou localStorage direto no login,
-          // aqui focamos apenas nos dados.
           setData(axiosRes.data);
           return axiosRes.data;
         }
@@ -61,8 +111,6 @@ export function useBaseHttp<Response, Form, DefaultValue>(
         setData(responseData);
         return responseData;
       } catch (e: any) {
-        // O tratamento de erro 401/Refresh é feito no interceptor do axios em @/lib/api.
-        // Se chegar aqui, é porque o refresh falhou ou é outro erro.
         const apiError: ApiError = {
           message: e.message || "Erro desconhecido",
           response: e.response,

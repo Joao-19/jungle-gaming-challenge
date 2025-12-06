@@ -17,7 +17,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover';
-import { api } from '@/lib/api';
+import { axiosInstance as api } from '@/composables/Services/Http/use-http';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface User {

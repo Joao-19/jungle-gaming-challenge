@@ -4,7 +4,7 @@ import {
   useQueryClient,
   type InfiniteData,
 } from "@tanstack/react-query";
-import { api } from "@/lib/api";
+import { axiosInstance as api } from "@/composables/Services/Http/use-http";
 import { io } from "socket.io-client";
 import { useEffect } from "react";
 

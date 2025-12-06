@@ -27,7 +27,13 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   async onModuleInit() {
-    await this.emailClient.connect();
+    try {
+      await this.emailClient.connect();
+    } catch (error) {
+      console.error('Error connecting to EMAIL_SERVICE (RabbitMQ):', error);
+      // Non-blocking error: allow service to start even if RabbitMQ is temporarily down.
+      // ClientProxy will attempt to reconnect on request.
+    }
   }
 
   async onModuleDestroy() {

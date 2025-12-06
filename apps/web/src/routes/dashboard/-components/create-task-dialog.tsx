@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { TaskPriority } from '@repo/dtos';
-import { api } from '@/lib/api';
+import { axiosInstance as api } from '@/composables/Services/Http/use-http';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/composables/UI/use-toast';
 

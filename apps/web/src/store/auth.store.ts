@@ -3,47 +3,76 @@ import type { User } from "../Domain/User";
 
 interface AuthStore {
   token: string | null;
-  setToken: (token: string | null) => void;
+  refreshToken: string | null;
+  setTokens: (token: string | null, refreshToken: string | null) => void;
   user: User | null;
-  setUser: (user: User) => void;
+  setUser: (user: User | null) => void;
+  logout: () => void;
 }
 
 export function useAuthStore(): AuthStore {
   const [token, setTokenState] = useState<string | null>(() => {
-    return localStorage.getItem("authToken");
+    return localStorage.getItem("auth_token");
   });
+
+  const [refreshToken, setRefreshTokenState] = useState<string | null>(() => {
+    return localStorage.getItem("refresh_token");
+  });
+
   const [user, setUserState] = useState<User | null>(() => {
-    const data = localStorage.getItem("authUser");
+    const data = localStorage.getItem("user");
     if (!data) return null;
-    return JSON.parse(data, (data: any) => ({
-      uuid: data.id,
-      username: data.name,
-      email: data.email,
-    }));
+    try {
+      return JSON.parse(data, (_, value) => {
+        // Basic transformation if needed, but usually storage matches structure
+        return value;
+      });
+    } catch {
+      return null;
+    }
   });
 
-  const setToken = useCallback((newToken: string | null) => {
-    setTokenState(newToken);
-    if (newToken) {
-      localStorage.setItem("authToken", newToken);
+  const setTokens = useCallback(
+    (newToken: string | null, newRefreshToken: string | null) => {
+      setTokenState(newToken);
+      setRefreshTokenState(newRefreshToken);
+
+      if (newToken) {
+        localStorage.setItem("auth_token", newToken);
+      } else {
+        localStorage.removeItem("auth_token");
+      }
+
+      if (newRefreshToken) {
+        localStorage.setItem("refresh_token", newRefreshToken);
+      } else {
+        localStorage.removeItem("refresh_token");
+      }
+    },
+    []
+  );
+
+  const setUser = useCallback((newUser: User | null) => {
+    setUserState(newUser);
+    if (newUser) {
+      localStorage.setItem("user", JSON.stringify(newUser));
     } else {
-      localStorage.removeItem("authToken");
+      localStorage.removeItem("user");
     }
   }, []);
 
-  const setUser = useCallback((user: User) => {
-    setUserState(user);
-    if (user) {
-      localStorage.setItem("authUser", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("authUser");
-    }
-  }, []);
+  const logout = useCallback(() => {
+    setTokens(null, null);
+    setUser(null);
+    localStorage.removeItem("user_id"); // Legacy cleanup if needed
+  }, [setTokens, setUser]);
 
   return {
     token,
-    setToken,
+    refreshToken,
+    setTokens,
     user,
     setUser,
+    logout,
   };
 }

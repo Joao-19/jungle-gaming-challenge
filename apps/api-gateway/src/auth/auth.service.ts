@@ -9,6 +9,7 @@ import {
   UserResponseDto,
   LogoutDto,
 } from '@repo/dtos';
+import { log } from 'console';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +36,7 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
+      console.log(error);
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,

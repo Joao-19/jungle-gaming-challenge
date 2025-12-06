@@ -1,4 +1,5 @@
 import { createRootRouteWithContext, Link, Outlet } from '@tanstack/react-router';
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { Toaster } from '@/components/ui/toaster';
 import type { AuthContextType } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
       {/* O Toaster fica aqui para funcionar em qualquer página, pode colocar um popUp aqui tbm, ai fica a nivel global, por cima de geral*/}
       <Toaster />
+      {import.meta.env.VITE_ROUTER_DEVTOOLS === 'true' && (
+        <TanStackRouterDevtoolsPanel />
+      )}
     </>
   ),
   notFoundComponent: () => {

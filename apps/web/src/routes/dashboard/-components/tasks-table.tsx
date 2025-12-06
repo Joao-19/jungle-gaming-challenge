@@ -22,7 +22,7 @@ import { format } from "date-fns";
 import { TaskStatus, TaskPriority } from "@repo/dtos";
 import { TaskDetailsDialog } from "./task-details-dialog";
 
-import { api } from "@/lib/api";
+import { axiosInstance as api } from "@/composables/Services/Http/use-http";
 
 async function fetchTasks(filters: any) {
     const params = new URLSearchParams();

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import { api } from "@/lib/api";
+import { axiosInstance as api } from "@/composables/Services/Http/use-http";
 
 export interface AuthContextType {
   isAuthenticated: boolean;

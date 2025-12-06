@@ -7,7 +7,7 @@ import { ModeToggle } from '@/components/mode-toggle';
 import { FiLogOut } from 'react-icons/fi';
 import { Button } from '@/components/ui/button';
 
-export const Route = createFileRoute('/_authenticated')({
+export const Route = createFileRoute('/dashboard')({
   beforeLoad: ({ context }) => {
     if (!context.auth.isAuthenticated) {
       throw redirect({ to: '/login' });

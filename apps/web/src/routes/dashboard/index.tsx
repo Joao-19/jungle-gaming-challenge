@@ -1,9 +1,8 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
-import { CreateTaskDialog } from '@/components/create-task-dialog';
-import { TasksTable } from '@/components/tasks-table';
-
-export const Route = createFileRoute('/_authenticated/dashboard')({
+import { CreateTaskDialog } from './-components/create-task-dialog';
+import { TasksTable } from './-components/tasks-table';
+export const Route = createFileRoute('/dashboard/')({
   component: Dashboard,
 });
 
