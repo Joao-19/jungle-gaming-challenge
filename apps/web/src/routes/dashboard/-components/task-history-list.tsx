@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/form/input";
 import { Loader2, Send } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useComments, { type CommentItem } from "@/composables/UseCases/Task/useComments";
-import { useAuth } from "@/context/auth-context";
+
 
 interface TaskHistoryListProps {
     taskId: string;
@@ -47,7 +47,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [commentText, setCommentText] = useState("");
     const [isSending, setIsSending] = useState(false);
-    const { userId } = useAuth();
+
 
     // Fetch History (Infinite)
     const {
@@ -76,7 +76,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
         fetchNextPage: fetchNextComments,
         hasNextPage: hasNextComments,
         isFetchingNextPage: isFetchingNextComments,
-    } = useComments({ taskId, limit: 5, userId });
+    } = useComments({ taskId, limit: 5 });
 
 
     // Merge and Sort

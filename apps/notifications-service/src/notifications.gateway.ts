@@ -4,6 +4,7 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
+import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 
 @WebSocketGateway({
@@ -20,20 +21,45 @@ export class NotificationsGateway
 
   private userSockets = new Map<string, string>();
 
+  constructor(private readonly jwtService: JwtService) {}
+
   handleConnection(client: Socket) {
-    const userId = client.handshake.query.userId as string;
-    const origin = client.handshake.headers.origin;
+    // 1. Extract token from handshake auth or headers
+    const token =
+      client.handshake.auth.token || client.handshake.headers.authorization;
 
-    console.log(`🔌 WebSocket connection from origin: ${origin}`);
-    console.log(
-      `📋 CORS_ORIGIN expected: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`,
-    );
+    if (!token) {
+      console.log(`⚠️  Client ${client.id} tried to connect without token`);
+      client.disconnect();
+      return;
+    }
 
-    if (userId) {
+    try {
+      // 2. Verify token
+      // Removing 'Bearer ' if present
+      const cleanToken = token.replace('Bearer ', '');
+      const payload = this.jwtService.verify(cleanToken, {
+        secret: process.env.JWT_SECRET,
+      });
+
+      const userId = payload.sub;
+      const origin = client.handshake.headers.origin;
+
+      console.log('CONEXAO AUTHENTICADA', { userId });
+
+      console.log(`🔌 WebSocket connection from origin: ${origin}`);
+      console.log(
+        `📋 CORS_ORIGIN expected: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`,
+      );
+
       this.userSockets.set(userId, client.id);
       console.log(`✅ Connected Client: ${client.id} (User: ${userId})`);
-    } else {
-      console.log(`⚠️  Client ${client.id} connected without userId`);
+    } catch (error) {
+      console.error(
+        `❌ Client ${client.id} failed authentication:`,
+        error.message,
+      );
+      client.disconnect();
     }
   }
 

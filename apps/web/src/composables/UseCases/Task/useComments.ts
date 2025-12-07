@@ -5,7 +5,7 @@ import {
   type InfiniteData,
 } from "@tanstack/react-query";
 import { axiosInstance as api } from "@/composables/Services/Http/use-http";
-import { io } from "socket.io-client";
+import { useSocket } from "@/composables/Services/websocket/useSocket";
 import { useEffect } from "react";
 
 interface User {
@@ -15,7 +15,6 @@ interface User {
 interface UseCommentsProps {
   taskId: string;
   limit?: number;
-  userId: string | null;
 }
 
 export interface CommentItem {
@@ -30,6 +29,7 @@ export interface CommentItem {
 
 interface CreateCommentDto {
   content: string;
+  createdAt?: string;
 }
 
 interface CommentsResponse {
@@ -42,7 +42,7 @@ interface CommentsResponse {
   };
 }
 
-function useComments({ taskId, limit = 5, userId }: UseCommentsProps) {
+function useComments({ taskId, limit = 5 }: UseCommentsProps) {
   const Events = {
     COMMENT: "notification",
   };
@@ -121,21 +121,19 @@ function useComments({ taskId, limit = 5, userId }: UseCommentsProps) {
     }
   }
 
-  // WebSocket Connection
-  useEffect(() => {
-    if (!userId) return;
-    const socket = io(import.meta.env.VITE_WS_URL || "http://localhost:3004", {
-      query: { userId },
-      transports: ["websocket"],
-    });
+  // WebSocket Connection using standardized hook
+  const { on, isConnected } = useSocket();
 
-    socket.on(Events.COMMENT, handleReceiveComment);
+  useEffect(() => {
+    if (!isConnected) return;
+
+    // Register the event listener when connected
+    const cleanup = on(Events.COMMENT, handleReceiveComment);
 
     return () => {
-      socket.off(Events.COMMENT, handleReceiveComment);
-      socket.disconnect();
+      cleanup();
     };
-  }, [taskId, queryClient]);
+  }, [taskId, queryClient, isConnected, on]);
 
   return {
     commentsData,

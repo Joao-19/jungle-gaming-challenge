@@ -45,10 +45,11 @@ export class AppController {
   @EventPattern('comment_added')
   handleCommentAdded(@Payload() data: CommentAddedEventDto) {
     const { taskTitle, taskId, recipients } = data;
-
     if (!recipients || recipients.length === 0) {
       return;
     }
+
+    console.log(data, 'COMENTARIO EMITIDO');
 
     this.notificationsGateway.notifyUsers(recipients, {
       type: 'COMMENT_ADDED',

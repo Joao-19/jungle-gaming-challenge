@@ -1,8 +1,8 @@
 import { createFileRoute, redirect, Outlet, useNavigate } from '@tanstack/react-router';
-import { useEffect } from 'react';
-import { io } from 'socket.io-client';
+
+import { useNotifications } from '@/composables/UseCases/Notification/useNotifications';
 import { useAuth } from '@/context/auth-context';
-import { useToast } from '@/composables/UI/use-toast';
+
 import { ModeToggle } from '@/components/mode-toggle';
 import { FiLogOut } from 'react-icons/fi';
 import { Button } from '@/components/ui/buttons/button';
@@ -18,35 +18,10 @@ export const Route = createFileRoute('/dashboard')({
 
 function AuthenticatedLayout() {
   const { userId, logout } = useAuth();
-  const { toast } = useToast();
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!userId) return;
-
-    const socket = io(import.meta.env.VITE_WS_URL || 'http://localhost:3004', {
-      query: { userId },
-      transports: ['websocket'],
-    });
-
-    socket.on('connect', () => {
-      console.log('WebSocket connected!', socket.id);
-    });
-
-    socket.on('notification', (data: any) => {
-      toast({
-        variant: 'default',
-        title: "Nova Atualização",
-        description: data.title,
-        duration: 5000,
-      });
-    });
-
-    return () => {
-      socket.disconnect();
-      console.log('WebSocket disconnected!');
-    };
-  }, [userId, toast]);
+  useNotifications();
 
   const handleLogout = async () => {
     await logout();
