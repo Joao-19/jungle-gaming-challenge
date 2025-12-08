@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { type AxiosResponse } from "axios";
+import { toast } from "@/composables/UI/use-toast";
 
 // --- Axios Configuration (Moved from lib/api.ts) ---
 
@@ -21,6 +22,22 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
+    // Tratamento Global de Erros (Fallback)
+    // Se NÃO for 401 (que é tratado abaixo) e NÃO for cancelamento
+    if (error.response?.status !== 401 && error.code !== "ERR_CANCELED") {
+      const message =
+        error.response?.data?.message || "Ocorreu um erro inesperado.";
+      const title = error.response?.data?.error || "Erro na Requisição";
+
+      toast({
+        variant: "destructive",
+        title: typeof title === "string" ? title : "Erro",
+        description: Array.isArray(message)
+          ? message.join(", ")
+          : String(message),
+      });
+    }
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
