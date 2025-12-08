@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Task } from './entities/task.entity';
 import { TaskHistory } from './entities/task-history.entity';
+import { TaskAssignee } from './entities/task-assignee.entity';
 import { TaskComment } from './entities/task-comment.entity';
 
 @Injectable()
@@ -25,11 +26,17 @@ export class TasksService {
     @InjectRepository(TaskComment)
     private commentsRepository: Repository<TaskComment>,
 
+    @InjectRepository(TaskAssignee)
+    private assigneesRepository: Repository<TaskAssignee>,
+
     @Inject('NOTIFICATIONS_SERVICE') private readonly client: ClientProxy,
   ) {}
 
   async addComment(taskId: string, userId: string, content: string) {
-    const task = await this.tasksRepository.findOne({ where: { id: taskId } });
+    const task = await this.tasksRepository.findOne({
+      where: { id: taskId },
+      relations: ['assignees'],
+    });
     if (!task) {
       throw new Error('Task not found');
     }
@@ -43,7 +50,10 @@ export class TasksService {
 
     // Determine recipients: Owner + Assignees (exclude comment author)
     const recipients = [
-      ...new Set([task.userId, ...(task.assigneeIds || [])]),
+      ...new Set([
+        task.userId,
+        ...(task.assignees?.map((a) => a.userId) || []),
+      ]),
     ].filter(
       (id) => id !== userId, // Não notifica quem comentou
     );
@@ -86,7 +96,9 @@ export class TasksService {
       status: TaskStatus.TODO,
       priority: createTaskDto.priority || TaskPriority.LOW,
       userId: userId,
-      assigneeIds: createTaskDto.assigneeIds || [],
+      assignees: (createTaskDto.assigneeIds || []).map((id) =>
+        this.assigneesRepository.create({ userId: id }),
+      ),
     });
 
     const savedTask = await this.tasksRepository.save(task);
@@ -116,12 +128,11 @@ export class TasksService {
     const query = this.tasksRepository.createQueryBuilder('task');
 
     // Filter by Owner OR Assignee
-    // Since assigneeIds is a simple-array (string), we use LIKE for partial match
-    // Note: This is a pragmatic solution for simple-array.
-    query.andWhere(
-      '(task.userId = :userId OR task.assigneeIds LIKE :userPattern)',
-      { userId, userPattern: `%${userId}%` },
-    );
+    query.leftJoinAndSelect('task.assignees', 'assignees');
+
+    query.andWhere('(task.userId = :userId OR assignees.userId = :userId)', {
+      userId,
+    });
 
     if (title) {
       query.andWhere('task.title ILIKE :title', { title: `%${title}%` });
@@ -150,8 +161,16 @@ export class TasksService {
 
     const [items, total] = await query.getManyAndCount();
 
+    // Map back using a strategy that keeps compatibility if needed,
+    // but typically we just return the entities.
+    // For compatibility with DTO that expects assigneeIds string assignment:
+    const mappedItems = items.map((item) => ({
+      ...item,
+      assigneeIds: item.assignees?.map((a) => a.userId) || [],
+    }));
+
     return {
-      data: items,
+      data: mappedItems,
       meta: {
         total,
         page,
@@ -161,19 +180,32 @@ export class TasksService {
     };
   }
 
-  findOne(id: string) {
-    return this.tasksRepository.findOne({ where: { id } });
+  async findOne(id: string) {
+    const task = await this.tasksRepository.findOne({
+      where: { id },
+      relations: ['assignees'],
+    });
+
+    if (!task) return null;
+
+    return {
+      ...task,
+      assigneeIds: task.assignees?.map((a) => a.userId) || [],
+    };
   }
 
   async update(id: string, updateTaskDto: UpdateTaskDto, userId: string) {
-    const task = await this.tasksRepository.findOne({ where: { id } });
+    const task = await this.tasksRepository.findOne({
+      where: { id },
+      relations: ['assignees'],
+    });
     if (!task) {
       throw new Error('Task not found');
     }
 
     // Allow Owner OR Assignee to update
     const isOwner = task.userId === userId;
-    const isAssignee = (task.assigneeIds || []).includes(userId);
+    const isAssignee = task.assignees?.some((a) => a.userId === userId);
 
     if (!isOwner && !isAssignee) {
       throw new ForbiddenException('You are not allowed to update this task');
@@ -235,11 +267,12 @@ export class TasksService {
 
     // Detect and Log Assignees Change
     if (updateTaskDto.assigneeIds) {
-      const oldAssignees = (task.assigneeIds || []).sort();
+      const oldAssignees = (task.assignees?.map((a) => a.userId) || []).sort();
       const newAssignees = (updateTaskDto.assigneeIds || []).sort();
 
       const isDifferent =
         JSON.stringify(oldAssignees) !== JSON.stringify(newAssignees);
+
       if (isDifferent) {
         changes.push('ASSIGNEES');
         await this.historyRepository.save({
@@ -250,15 +283,40 @@ export class TasksService {
           oldValue: JSON.stringify(oldAssignees),
           newValue: JSON.stringify(newAssignees),
         });
+
+        // Update relation
+        // Clear current assignees
+        await this.assigneesRepository.delete({ taskId: task.id });
+
+        // Add new assignees
+        const newAssigneeEntities = updateTaskDto.assigneeIds.map((id) =>
+          this.assigneesRepository.create({ userId: id, taskId: task.id }),
+        );
+        await this.assigneesRepository.save(newAssigneeEntities);
+
+        // Reload task to get updated assignees for response
+        const reloadedTask = await this.tasksRepository.findOne({
+          where: { id: task.id },
+          relations: ['assignees'],
+        });
+        task.assignees = reloadedTask?.assignees || [];
       }
     }
 
-    Object.assign(task, updateTaskDto);
+    // Save simple properties
+    const { assigneeIds, ...simpleUpdate } = updateTaskDto; // Exclude assigneeIds from direct update
+    Object.assign(task, simpleUpdate);
 
     const updatedTask = await this.tasksRepository.save(task);
-    this.client.emit('task_updated', { ...updatedTask, changes });
 
-    return updatedTask;
+    const responseTask = {
+      ...updatedTask,
+      assigneeIds: updatedTask.assignees?.map((a) => a.userId) || [],
+    };
+
+    this.client.emit('task_updated', { ...responseTask, changes });
+
+    return responseTask;
   }
 
   async remove(id: string, userId: string) {

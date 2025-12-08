@@ -6,10 +6,11 @@ import { Task } from './entities/task.entity';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TaskHistory } from './entities/task-history.entity';
 import { TaskComment } from './entities/task-comment.entity';
+import { TaskAssignee } from './entities/task-assignee.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Task, TaskHistory, TaskComment]),
+    TypeOrmModule.forFeature([Task, TaskHistory, TaskComment, TaskAssignee]),
     // Registra o cliente que vai mandar mensagens
     ClientsModule.register([
       {

@@ -9,6 +9,7 @@ import {
 
 import { TaskStatus, TaskPriority } from '@repo/dtos';
 import { TaskHistory } from './task-history.entity';
+import { TaskAssignee } from './task-assignee.entity';
 import { TaskComment } from './task-comment.entity';
 
 @Entity({ name: 'tasks' })
@@ -34,8 +35,8 @@ export class Task {
   @Column()
   userId: string;
 
-  @Column({ type: 'simple-array', nullable: true })
-  assigneeIds: string[];
+  @OneToMany(() => TaskAssignee, (assignee) => assignee.task, { cascade: true })
+  assignees: TaskAssignee[];
 
   @OneToMany(() => TaskHistory, (history) => history.task)
   history: TaskHistory[];
