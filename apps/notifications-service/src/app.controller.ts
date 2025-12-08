@@ -1,6 +1,6 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get, Query, Patch, Param } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
-import { NotificationsGateway } from './notifications.gateway';
+import { AppService } from './app.service';
 import {
   TaskCreatedEventDto,
   TaskUpdatedEventDto,
@@ -9,21 +9,25 @@ import {
 
 @Controller()
 export class AppController {
-  constructor(private readonly notificationsGateway: NotificationsGateway) {} // Injete
+  constructor(private readonly appService: AppService) {}
 
   @EventPattern('task_created')
-  handleTaskCreated(@Payload() data: TaskCreatedEventDto) {
+  async handleTaskCreated(@Payload() data: TaskCreatedEventDto) {
     const recipients = [...new Set([data.userId, ...(data.assigneeIds || [])])];
 
-    this.notificationsGateway.notifyUsers(recipients, {
-      title: `Nova tarefa criada: ${data.title}`,
-      taskId: data.id,
-      type: 'TASK_CREATED',
-    });
+    // Persist and Notify for each recipient
+    for (const userId of recipients) {
+      await this.appService.create({
+        userId,
+        title: `Nova tarefa criada: ${data.title}`,
+        type: 'TASK_CREATED',
+        metadata: { taskId: data.id },
+      });
+    }
   }
 
   @EventPattern('task_updated')
-  handleTaskUpdated(@Payload() data: TaskUpdatedEventDto) {
+  async handleTaskUpdated(@Payload() data: TaskUpdatedEventDto) {
     const changes = data.changes || [];
     const shouldNotify =
       changes.includes('STATUS') || changes.includes('ASSIGNEES');
@@ -34,27 +38,42 @@ export class AppController {
 
     const recipients = [...new Set([data.userId, ...(data.assigneeIds || [])])];
 
-    this.notificationsGateway.notifyUsers(recipients, {
-      title: `Tarefa atualizada: ${data.title}`,
-      taskId: data.id,
-      type: 'TASK_UPDATED',
-      changes: changes,
-    });
+    for (const userId of recipients) {
+      await this.appService.create({
+        userId,
+        title: `Tarefa atualizada: ${data.title}`,
+        type: 'TASK_UPDATED',
+        content: `Alterações: ${changes.join(', ')}`,
+        metadata: { taskId: data.id, changes },
+      });
+    }
   }
 
   @EventPattern('comment_added')
-  handleCommentAdded(@Payload() data: CommentAddedEventDto) {
+  async handleCommentAdded(@Payload() data: CommentAddedEventDto) {
     const { taskTitle, taskId, recipients } = data;
     if (!recipients || recipients.length === 0) {
       return;
     }
 
-    console.log(data, 'COMENTARIO EMITIDO');
+    for (const userId of recipients) {
+      await this.appService.create({
+        userId,
+        title: `${taskTitle} tem um comentário!`,
+        type: 'COMMENT_ADDED',
+        metadata: { taskId },
+      });
+    }
+  }
 
-    this.notificationsGateway.notifyUsers(recipients, {
-      type: 'COMMENT_ADDED',
-      title: `${taskTitle} tem um comentário!`,
-      taskId: taskId,
-    });
+  // HTTP Endpoints exposed via Gateway (Hybrid Application)
+  @Get('notifications')
+  getNotifications(@Query('userId') userId: string) {
+    return this.appService.findAll(userId);
+  }
+
+  @Patch('notifications/:id/read')
+  markAsRead(@Param('id') id: string) {
+    return this.appService.markAsRead(id);
   }
 }
