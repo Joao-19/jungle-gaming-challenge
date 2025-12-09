@@ -617,6 +617,11 @@ export const AppDataSource = new DataSource({
 
 ## 📡 Endpoints da API
 
+<details>
+<summary><b>📋 Ver todos os endpoints disponíveis (clique para expandir)</b></summary>
+
+<br/>
+
 ### Base URL
 
 ```
@@ -677,6 +682,8 @@ io("ws://localhost:3004", {
   auth: { token: "your-jwt-token" },
 });
 ```
+
+</details>
 
 ---
 
@@ -806,6 +813,11 @@ pnpm --filter "*-service" test:cov
 
 ## 🚀 Possíveis Features Futuras
 
+<details>
+<summary><b>💡 Ver roadmap de features futuras (clique para expandir)</b></summary>
+
+<br/>
+
 ### Melhorias de UX
 
 - 🔄 **Filtros Compostos**
@@ -878,6 +890,8 @@ pnpm --filter "*-service" test:cov
   - Full-text search com Elasticsearch
   - Busca semântica
   - Filtros salvos e compartilháveis
+
+</details>
 
 ---
 
