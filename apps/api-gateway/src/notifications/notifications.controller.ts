@@ -20,13 +20,31 @@ export class NotificationsController {
 
   @Get()
   @ApiOperation({ summary: 'Get user notifications' })
-  async getNotifications(@Request() req: AuthenticatedRequest) {
-    return this.notificationsService.findAll(req.user.userId);
+  async getNotifications(
+    @Request() req: AuthenticatedRequest & { headers: any },
+  ) {
+    // Extract token from Authorization header to propagate to microservice
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      throw new Error('Authorization token is required');
+    }
+
+    return this.notificationsService.findAll(req.user.userId, token);
   }
 
   @Patch(':id/read')
   @ApiOperation({ summary: 'Mark notification as read' })
-  async markAsRead(@Param('id') id: string) {
-    return this.notificationsService.markAsRead(id);
+  async markAsRead(
+    @Param('id') id: string,
+    @Request() req: AuthenticatedRequest & { headers: any },
+  ) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+
+    if (!token) {
+      throw new Error('Authorization token is required');
+    }
+
+    return this.notificationsService.markAsRead(id, token);
   }
 }

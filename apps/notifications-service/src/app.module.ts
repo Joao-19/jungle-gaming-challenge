@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { NotificationsGateway } from './notifications.gateway';
 import { Notification } from './entities/notification.entity';
+import { JwtStrategy } from './jwt.strategy';
 
 @Module({
   imports: [
@@ -27,6 +29,7 @@ import { Notification } from './entities/notification.entity';
       inject: [ConfigService],
     }),
     TypeOrmModule.forFeature([Notification]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET,
@@ -34,6 +37,6 @@ import { Notification } from './entities/notification.entity';
     }),
   ],
   controllers: [AppController],
-  providers: [AppService, NotificationsGateway],
+  providers: [AppService, NotificationsGateway, JwtStrategy],
 })
 export class AppModule {}

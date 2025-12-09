@@ -16,11 +16,13 @@ export class NotificationsService {
       'http://localhost:3004';
   }
 
-  async findAll(userId: string) {
+  async findAll(userId: string, token?: string) {
     try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await firstValueFrom(
         this.httpService.get(`${this.serviceUrl}/notifications`, {
           params: { userId },
+          headers,
         }),
       );
       return response.data;
@@ -32,10 +34,15 @@ export class NotificationsService {
     }
   }
 
-  async markAsRead(id: string) {
+  async markAsRead(id: string, token?: string) {
     try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const response = await firstValueFrom(
-        this.httpService.patch(`${this.serviceUrl}/notifications/${id}/read`),
+        this.httpService.patch(
+          `${this.serviceUrl}/notifications/${id}/read`,
+          {},
+          { headers },
+        ),
       );
       return response.data;
     } catch (error) {

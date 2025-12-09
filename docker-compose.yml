@@ -20,7 +20,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - jungle-network
+      - backend
 
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -40,7 +40,7 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
-      - jungle-network
+      - backend
 
   # ----------------------------------------------------------------
   # BACKEND SERVICES
@@ -70,7 +70,7 @@ services:
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
       RABBITMQ_URL: ${RABBITMQ_URL}
     networks:
-      - jungle-network
+      - backend
 
   tasks-service:
     build:
@@ -97,7 +97,7 @@ services:
       JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
       RABBITMQ_URL: ${RABBITMQ_URL}
     networks:
-      - jungle-network
+      - backend
 
   notifications-service:
     build:
@@ -122,7 +122,7 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN}
       JWT_SECRET: ${JWT_SECRET}
     networks:
-      - jungle-network
+      - backend # Needs backend for WebSocket + HTTP endpoints
   email-service:
     build:
       context: .
@@ -142,7 +142,7 @@ services:
       MAIL_FROM: ${MAIL_FROM}
       WEB_URL: ${WEB_URL}
     networks:
-      - jungle-network
+      - backend
   api-gateway:
     build:
       context: .
@@ -177,7 +177,8 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN}
       PORT: ${API_GATEWAY_PORT}
     networks:
-      - jungle-network
+      - frontend # Accepts requests from web
+      - backend # Calls internal microservices
 
   # ----------------------------------------------------------------
   # FRONTEND
@@ -197,7 +198,7 @@ services:
       # mas expomos isso aqui caso precise buildar
       VITE_API_URL: http://localhost:${API_GATEWAY_PORT}
     networks:
-      - jungle-network
+      - frontend # Only needs to reach api-gateway
 
 volumes:
   postgres_data:
@@ -206,5 +207,13 @@ volumes:
     driver: local
 
 networks:
-  jungle-network:
+  # Frontend network: externally accessible services
+  frontend:
     driver: bridge
+    name: jungle-frontend
+
+  # Backend network: internal microservices only
+  backend:
+    driver: bridge
+    name: jungle-backend
+    internal: false # Set to true for full isolation (blocks internet access)

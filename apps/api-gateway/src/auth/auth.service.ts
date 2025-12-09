@@ -7,7 +7,6 @@ import {
   LoginDto,
   LoginResponseDto,
   UserResponseDto,
-  LogoutDto,
 } from '@repo/dtos';
 
 @Injectable()
@@ -83,21 +82,12 @@ export class AuthService {
     }
   }
 
-  async logout(form: LogoutDto): Promise<{ message: string }> {
+  async logout(userId: string): Promise<{ message: string }> {
     try {
-      const { userId, token } = form;
       const response = await lastValueFrom(
-        this.httpService.post(
-          `${this.AUTH_SERVICE_URL}/auth/logout`,
-          {
-            userId,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        ),
+        this.httpService.post(`${this.AUTH_SERVICE_URL}/auth/logout`, {
+          userId,
+        }),
       );
       return response.data;
     } catch (error) {

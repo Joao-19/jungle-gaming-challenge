@@ -66,4 +66,14 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Ícone do input de data com cor primária (mesmo verde do Task Manager) */
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(78%) sepia(96%) saturate(468%) hue-rotate(29deg) brightness(95%) contrast(93%);
+    cursor: pointer;
+  }
+  
+  input[type="date"]::-webkit-calendar-picker-indicator:hover {
+    filter: invert(78%) sepia(96%) saturate(468%) hue-rotate(29deg) brightness(105%) contrast(93%);
+  }
 }
