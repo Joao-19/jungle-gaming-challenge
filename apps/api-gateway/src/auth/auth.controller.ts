@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards, Headers } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Request } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -8,9 +8,9 @@ import {
   LoginResponseDto,
   UserResponseDto,
   RefreshTokenDto,
-  LogoutDto,
 } from '@repo/dtos';
 import { AuthGuard } from '@nestjs/passport';
+import type { AuthenticatedRequest } from '@repo/dtos';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -75,24 +75,14 @@ export class AuthController {
   @Post('logout')
   @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Logout de usuário' })
-  @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        userId: { type: 'string', example: 'uuid-do-usuario' },
-      },
-    },
-  })
   @ApiResponse({
     status: 200,
     description: 'Logout realizado com sucesso',
   })
-  logout(
-    @Body() body: LogoutDto,
-    @Headers('authorization') auth: string,
-  ): Promise<{ message: string }> {
-    const token = auth?.replace('Bearer ', '');
-    return this.authService.logout({ userId: body.userId, token });
+  logout(@Request() req: AuthenticatedRequest): Promise<{ message: string }> {
+    // SECURITY: Extract userId from validated JWT token, not from request body
+    // This prevents users from logging out other users
+    return this.authService.logout(req.user.userId);
   }
 
   @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 solicitações por minuto

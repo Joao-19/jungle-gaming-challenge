@@ -205,6 +205,7 @@ User → Frontend → API Gateway → Auth Service → PostgreSQL (save token)
 
 - **NestJS** 10 - Framework backend
 - **TypeORM** 0.3 - ORM para PostgreSQL
+- **TypeORM Migrations** - Gerenciamento de schema do banco
 - **Passport JWT** - Autenticação
 - **RabbitMQ** 3.13 - Message broker
 - **Class Validator** - Validação de DTOs
@@ -322,6 +323,78 @@ Desafio-Full-stack/
 - Redis Pub/Sub: Sem persistência, sem garantia de entrega
 - Kafka: Overkill para este caso de uso, complexidade desnecessária
 
+### Padrões de Comunicação: RPC Síncrono vs Mensageria Assíncrona
+
+**Decisão Arquitetural:** O API Gateway utiliza **duas estratégias distintas** para comunicação com os microserviços, baseadas no tipo de operação.
+
+**1. RPC Síncrono (TCP) - Operações CRUD:**
+
+```
+API Gateway → [TCP/RPC] → Auth/Tasks Services → PostgreSQL → Response
+```
+
+**Quando usado:**
+
+- Operações CRUD (Create, Read, Update, Delete)
+- Autenticação e validação de tokens
+- Consultas que exigem resposta imediata
+- Qualquer operação crítica do fluxo principal do usuário
+
+**Razões técnicas:**
+
+- ✅ **Baixa latência** - Comunicação direta TCP (~5-10ms) vs RabbitMQ (~50-100ms)
+- ✅ **Feedback imediato** - Usuário recebe resposta síncrona de sucesso/erro
+- ✅ **Disponibilidade de dados críticos** - Se RabbitMQ cair, operações essenciais continuam funcionando
+- ✅ **Transações** - Permite rollback e controle transacional adequado
+- ✅ **Simplicidade** - Request/Response é mais simples para operações CRUD
+
+**2. Mensageria Assíncrona (RabbitMQ) - Eventos e Notificações:**
+
+```
+Tasks Service → [RabbitMQ Event] → Notifications/Email Services
+```
+
+**Quando usado:**
+
+- Envio de notificações em tempo real
+- Disparo de emails (recuperação de senha, confirmação)
+- Broadcast de eventos (task_created, task_updated, comment_added)
+- Operações que **não bloqueiam** o fluxo principal
+
+**Razões técnicas:**
+
+- ✅ **Desacoplamento** - Serviços não precisam conhecer uns aos outros
+- ✅ **Resiliência** - Mensagens persistidas em caso de falha temporária
+- ✅ **Escalabilidade** - Múltiplos consumidores podem processar eventos
+- ✅ **Fire-and-forget** - Operação principal não aguarda conclusão
+- ✅ **Event sourcing** - Histórico de eventos do sistema
+
+**Trade-offs da Abordagem Híbrida:**
+
+| Aspecto          | RPC Síncrono        | RabbitMQ Assíncrono   |
+| ---------------- | ------------------- | --------------------- |
+| **Latência**     | 5-10ms              | 50-100ms              |
+| **Garantias**    | Resposta imediata   | Eventual consistency  |
+| **Resiliência**  | Falha = erro direto | Retry automático      |
+| **Complexidade** | Baixa               | Média                 |
+| **Uso ideal**    | Dados críticos      | Notificações, eventos |
+
+**Por que não usar RabbitMQ para tudo?**
+
+- ❌ **Latência inaceitável** - Usuário aguardando 100ms+ para cada requisição CRUD
+- ❌ **Single point of failure** - Se RabbitMQ cair, sistema inteiro para
+- ❌ **Perda de dados críticos** - Sem resposta síncrona, impossível validar se operação teve sucesso
+- ❌ **UX degradada** - Impossível mostrar erro de validação imediatamente (ex: "Email já cadastrado")
+- ❌ **Overhead desnecessário** - Serialização/deserialização adicional para operações simples
+
+**Por que não usar apenas RPC?**
+
+- ❌ **Acoplamento** - Serviços precisariam conhecer todos os consumidores
+- ❌ **Bloqueio** - Envio de email atrasaria resposta do cadastro
+- ❌ **Escalabilidade** - Dificultar adicionar novos consumidores de eventos
+
+**Decisão final:** Arquitetura híbrida que combina o melhor dos dois mundos - **RPC para operações síncronas críticas** e **RabbitMQ para eventos assíncronos**, maximizando performance, disponibilidade e experiência do usuário.
+
 ### Por que TanStack Router ao invés de React Router?
 
 **Vantagens:**
@@ -346,6 +419,120 @@ Desafio-Full-stack/
 
 **Armazenamento:** localStorage (frontend) + hash bcrypt (backend)
 
+### Segurança em Camadas: Isolamento de Rede + JWT Guards
+
+**Decisão Arquitetural:** Implementação de **Defense in Depth** (segurança em profundidade) para comunicação entre microserviços.
+
+**Camada 1: Isolamento de Rede Docker**
+
+```yaml
+# docker-compose.yml
+services:
+  api-gateway:
+    networks:
+      - frontend
+      - backend
+
+  auth-service:
+    networks:
+      - backend # NÃO exposto externamente
+    ports: [] # Sem bind de portas públicas
+```
+
+**Benefícios:**
+
+- ✅ **Performance** - Comunicação via rede interna Docker (~0.1ms overhead)
+- ✅ **Isolamento** - Microserviços **não acessíveis** diretamente da internet
+- ✅ **DNS interno** - Resolução de nomes automática (ex: `auth-service:3002`)
+- ✅ **Zero configuração** - Docker gerencia roteamento automaticamente
+- ✅ **Segurança por padrão** - Apenas API Gateway exposto externamente
+
+**Topologia de Rede:**
+
+```
+Internet → API Gateway (porta 3001 pública)
+              ↓
+         [Docker Network: backend]
+              ↓
+    ┌─────────┼─────────┬──────────┐
+    ↓         ↓         ↓          ↓
+  Auth    Tasks    Notif       Email
+  :3002   :3003    :3004       :3007
+  (privado)(privado)(privado) (privado)
+```
+
+**Camada 2: JWT Guards nos Microserviços (Defense in Depth)**
+
+**⚠️ Decisão Crítica:** Mesmo com isolamento de rede, **todos os endpoints internos possuem validação JWT**.
+
+**Por quê?**
+
+```typescript
+// auth-service/src/users/users.controller.ts
+@Controller("users")
+@UseGuards(JwtAuthGuard) // ← Proteção JWT mesmo sendo interno
+export class UsersController {
+  @Get(":id")
+  findOne(@Param("id") id: string) {
+    return this.usersService.findOne(+id);
+  }
+}
+```
+
+**Razões técnicas:**
+
+- ✅ **Defesa contra vazamento de rotas** - Se endpoint interno vazar (ex: erro de config NGinx/proxy), ainda está protegido
+- ✅ **Segurança contra container escape** - Se atacante comprometer um container, não consegue acessar outros serviços
+- ✅ **Auditoria e logs** - JWT fornece contexto do usuário para rastreamento
+- ✅ **Autorização granular** - Permite verificar permissões por usuário mesmo internamente
+- ✅ **Preparação para produção** - Se migrar para Kubernetes/service mesh, já está seguro
+
+**Cenários de Ataque Mitigados:**
+
+| Cenário                                    | Sem JWT Interno                         | Com JWT Interno                         |
+| ------------------------------------------ | --------------------------------------- | --------------------------------------- |
+| **Rota vazada (proxy misconfiguration)**   | ❌ Acesso direto ao microserviço        | ✅ Bloqueado - requer JWT válido        |
+| **Container comprometido**                 | ❌ Atacante pode chamar outros serviços | ✅ Limitado - precisa roubar JWT válido |
+| **SSRF (Server-Side Request Forgery)**     | ❌ Pode acessar serviços internos       | ✅ Bloqueado - sem token válido         |
+| **Insider threat (funcionário malicioso)** | ❌ Acesso direto via VPN/network        | ✅ Logs de auditoria + autorização      |
+
+**Trade-offs da Abordagem:**
+
+**Prós:**
+
+- ✅ **Zero trust architecture** - "Nunca confie, sempre verifique"
+- ✅ **Compliance** - Atende requisitos de segurança (PCI-DSS, SOC2)
+- ✅ **Rastreabilidade** - Logs sempre contêm `userId` do JWT
+- ✅ **Flexibilidade** - Fácil migrar para cloud (AWS ECS, GCP Cloud Run)
+
+**Contras:**
+
+- ⚠️ **Overhead mínimo** - Validação JWT adiciona ~1-2ms por requisição
+- ⚠️ **Complexidade** - API Gateway precisa propagar JWT para todos os serviços
+- ⚠️ **Key sharing** - Todos os serviços precisam da mesma `JWT_SECRET`
+
+**Mitigação dos Contras:**
+
+```typescript
+// API Gateway propaga JWT automaticamente
+const response = await this.authClient.send(
+  { cmd: "get_user" },
+  { userId, token: context.token } // ← JWT propagado
+);
+```
+
+```env
+# .env compartilhado
+JWT_SECRET=shared-secret-key-123  # TODO: usar vault em produção
+```
+
+**Decisão Final:** Implementar **defesa em profundidade** combinando:
+
+1. **Isolamento de rede Docker** para performance e segurança base
+2. **JWT Guards em todos os endpoints** para proteção contra vazamentos e ataques internos
+
+Resultado: Microserviços **rápidos E seguros**, com proteção contra configurações erradas e comprometimento de containers.
+
 ### Paginação & Filtros
 
 **Implementação:**
@@ -360,23 +547,71 @@ Desafio-Full-stack/
 - ✅ UX: Permite navegação eficiente
 - ✅ Backend: Reduz carga do banco de dados
 
-### TypeORM em Sync Mode
+### TypeORM Migrations
 
-**⚠️ IMPORTANTE:** Por simplicidade no desenvolvimento, o TypeORM está configurado em `synchronize: true`.
+**✅ IMPLEMENTADO:** O projeto utiliza TypeORM Migrations para gerenciamento de schema do banco de dados.
 
-**Implicações:**
+**Estrutura:**
 
-- ✅ Desenvolvimento rápido: Schema atualizado automaticamente
-- ❌ Produção: **NUNCA** usar sync mode em produção
-- ❌ Migrations: Não foram geradas (problema conhecido)
+Cada microserviço possui:
 
-**Solução para produção:**
+- `src/data-source.ts` - Configuração do DataSource para migrations
+- `src/migrations/` - Diretório com os arquivos de migration
+- Scripts npm para gerenciamento de migrations
+
+**Scripts Disponíveis (por serviço):**
 
 ```bash
-# Desativar sync e gerar migrations
-typeorm migration:generate -n InitialSchema
-typeorm migration:run
+# Gerar nova migration
+pnpm migration:generate src/migrations/NomeDaMigration
+
+# Criar migration vazia
+pnpm migration:create src/migrations/NomeDaMigration
+
+# Executar migrations pendentes
+pnpm migration:run
+
+# Reverter última migration
+pnpm migration:revert
+
+# Ver status das migrations
+pnpm migration:show
 ```
+
+**Script Automatizado (PowerShell):**
+
+O projeto inclui um script PowerShell para automatizar o processo de geração de migrations em todos os microserviços:
+
+```powershell
+# Executar o script
+.\generate-migrations.ps1
+```
+
+**Opções do Script:**
+
+1. **Limpar e recriar** - Derruba o banco, recria e gera migrations (ideal para desenvolvimento)
+2. **Sincronizar** - Gera migrations preservando dados existentes
+
+**Configuração:**
+
+```typescript
+// src/data-source.ts (exemplo)
+export const AppDataSource = new DataSource({
+  type: "postgres",
+  host: process.env.POSTGRES_HOST || "localhost",
+  port: parseInt(process.env.POSTGRES_PORT || "5432"),
+  // ...
+  entities: ["src/**/*.entity.ts"],
+  migrations: ["src/migrations/*.ts"],
+  synchronize: false, // Sempre false para produção
+});
+```
+
+**Migrations Atuais:**
+
+- ✅ **auth-service**: Schema de usuários e autenticação
+- ✅ **tasks-service**: Schema de tarefas, histórico, comentários e assignees
+- ✅ **notifications-service**: Schema de notificações
 
 ---
 
@@ -496,25 +731,7 @@ pnpm --filter "*-service" test:cov
 
 ## 🐛 Problemas Conhecidos
 
-### 1. TypeORM Migrations
-
-**Status:** ⚠️ Não implementado
-
-**Problema:** Database schema é sincronizado automaticamente (`synchronize: true`)
-
-**Impacto:** Em produção, isso pode causar perda de dados
-
-**Solução:**
-
-```typescript
-// Desabilitar sync em produção
-synchronize: process.env.NODE_ENV !== 'production'
-
-// Gerar migrations
-npm run typeorm migration:generate -- -n InitialSchema
-```
-
-### 2. Logging Estruturado
+### 1. Logging Estruturado
 
 **Status:** ⚠️ Básico (console.log)
 
@@ -522,7 +739,7 @@ npm run typeorm migration:generate -- -n InitialSchema
 
 **Solução futura:** Implementar Winston ou Pino com níveis de log
 
-### 3. Testes E2E
+### 2. Testes E2E
 
 **Status:** ❌ Não implementado
 
@@ -530,7 +747,7 @@ npm run typeorm migration:generate -- -n InitialSchema
 
 **Solução futura:** Adicionar testes E2E com Supertest para controllers
 
-### 4. Frontend Error Boundary
+### 3. Frontend Error Boundary
 
 **Status:** ⚠️ Básico
 
@@ -544,7 +761,7 @@ npm run typeorm migration:generate -- -n InitialSchema
 
 ### Curto Prazo (1-2 semanas)
 
-- [ ] Implementar migrations TypeORM
+- [x] Implementar migrations TypeORM ✅
 - [ ] Adicionar logging estruturado (Winston)
 - [ ] Testes E2E dos controllers
 - [ ] Skeleton loaders no frontend
