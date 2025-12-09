@@ -3,7 +3,12 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
+import { Inject, forwardRef } from '@nestjs/common';
+import { AppService } from './app.service';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 
@@ -21,7 +26,11 @@ export class NotificationsGateway
 
   private userSockets = new Map<string, string>();
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => AppService))
+    private readonly appService: AppService,
+  ) {}
 
   handleConnection(client: Socket) {
     // 1. Extract token from handshake auth or headers
@@ -53,6 +62,7 @@ export class NotificationsGateway
       );
 
       this.userSockets.set(userId, client.id);
+      client.data.userId = userId; // Store for easy access in handlers
       console.log(`✅ Connected Client: ${client.id} (User: ${userId})`);
     } catch (error) {
       console.error(
@@ -89,5 +99,27 @@ export class NotificationsGateway
     userIds.forEach((userId) => {
       this.notifyUser(userId, payload);
     });
+  }
+
+  @SubscribeMessage('mark_as_read_by_task')
+  async handleMarkAsReadByTask(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { taskId: string },
+  ) {
+    const userId = client.data.userId;
+    if (!userId) {
+      console.log('Ignore mark_as_read: No userId in socket');
+      return;
+    }
+
+    if (!data.taskId) {
+      console.log('Ignore mark_as_read: No taskId in payload');
+      return;
+    }
+
+    console.log(
+      `Received mark_as_read_by_task for Task: ${data.taskId} from User: ${userId}`,
+    );
+    await this.appService.markAsReadByTaskId(userId, data.taskId);
   }
 }

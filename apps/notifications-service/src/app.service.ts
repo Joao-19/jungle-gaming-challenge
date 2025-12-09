@@ -43,7 +43,33 @@ export class AppService {
   }
 
   async markAsRead(id: string) {
-    await this.notificationsRepository.update(id, { readAt: new Date() });
-    return this.notificationsRepository.findOne({ where: { id } });
+    await this.notificationsRepository.update(id, {
+      readAt: new Date(),
+    });
+    return { success: true };
+  }
+
+  async markAsReadByTaskId(userId: string, taskId: string) {
+    console.log(`MARK AS READ BY TASK ID: userId=${userId}, taskId=${taskId}`);
+
+    // Safer approach: Find pending notifications for this task, then update them.
+    const notifications = await this.notificationsRepository
+      .createQueryBuilder('notification')
+      .where('notification.userId = :userId', { userId })
+      .andWhere("notification.metadata->>'taskId' = :taskId", { taskId })
+      .andWhere('notification.readAt IS NULL')
+      .getMany();
+
+    if (notifications.length > 0) {
+      const ids = notifications.map((n) => n.id);
+      await this.notificationsRepository.update(ids, {
+        readAt: new Date(),
+      });
+      console.log(
+        `Marked ${ids.length} notifications as read for task ${taskId}`,
+      );
+    }
+
+    return { success: true, count: notifications.length };
   }
 }

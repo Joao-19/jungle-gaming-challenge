@@ -27,6 +27,7 @@ import { axiosInstance as api } from '@/composables/Services/Http/use-http';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/composables/UI/use-toast';
 import { useAuth } from '@/context/auth-context';
+import { useSocket } from '@/composables/Services/websocket/useSocket';
 
 interface Task {
     id: string;
@@ -85,6 +86,20 @@ export function TaskDetailsDialog({
     const priority = watch('priority');
     const status = watch('status');
     const assigneeIds = watch('assigneeIds') || [];
+
+    const { socket, isConnected } = useSocket();
+
+    useEffect(() => {
+        if (task && open && socket && isConnected) {
+            console.log('Sending mark_as_read_by_task', task.id);
+            socket.emit('mark_as_read_by_task', { taskId: task.id });
+
+            // Invalidate notifications list
+            if (userId) {
+                queryClient.invalidateQueries({ queryKey: ['notifications', userId] });
+            }
+        }
+    }, [task, open, socket, isConnected, userId, queryClient]);
 
     useEffect(() => {
         if (task) {

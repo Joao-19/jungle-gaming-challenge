@@ -46,6 +46,7 @@ export function useNotifications() {
     queryClient.setQueryData(
       ["notifications", userId],
       (old: Notification[] = []) => {
+        if (old.some((n) => n.id === data.id)) return old;
         return [data, ...old];
       }
     );
