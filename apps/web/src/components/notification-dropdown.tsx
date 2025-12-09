@@ -12,6 +12,7 @@ import { Bell } from 'lucide-react';
 import {
     useNotifications,
 } from '@/composables/UseCases/Notification/useNotifications';
+import { useNavigate } from '@tanstack/react-router';
 import type { Notification } from '@/composables/UseCases/Notification/useNotifications';
 import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
@@ -87,8 +88,22 @@ function NotificationItem({
     item: Notification;
     isRead?: boolean;
 }) {
+    const navigate = useNavigate();
+
+    const handleClick = () => {
+        if (item.metadata?.taskId) {
+            navigate({
+                to: '/dashboard',
+                search: { taskId: item.metadata.taskId },
+            });
+        }
+    };
+
     return (
-        <DropdownMenuItem className="cursor-pointer flex-col items-start gap-1 p-3">
+        <DropdownMenuItem
+            className="cursor-pointer flex-col items-start gap-1 p-3"
+            onClick={handleClick}
+        >
             <div className="flex w-full justify-between gap-2">
                 <span className={`text-sm font-medium ${isRead ? 'text-muted-foreground' : ''}`}>
                     {item.title}

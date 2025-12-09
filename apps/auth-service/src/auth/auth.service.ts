@@ -50,7 +50,11 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
       throw new ForbiddenException('Invalid email or password');
     }
 
-    const tokens = await this.getTokens(validUser.id, validUser.email);
+    const tokens = await this.getTokens(
+      validUser.id,
+      validUser.email,
+      validUser.username,
+    );
     await this.updateRefreshToken(validUser.id, tokens.refreshToken);
 
     return new LoginResponseDto(
@@ -75,7 +79,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     );
     if (!tokenMatches) throw new ForbiddenException('Access Denied');
 
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.username);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
     return tokens;
   }
@@ -85,10 +89,10 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     await this.usersService.update(userId, { currentRefreshToken: hash });
   }
 
-  async getTokens(userId: string, email: string) {
+  async getTokens(userId: string, email: string, username: string) {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, username },
         {
           secret: this.configService.get<string>('JWT_SECRET'),
           expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ||
@@ -96,7 +100,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
         },
       ),
       this.jwtService.signAsync(
-        { sub: userId, email },
+        { sub: userId, email, username },
         {
           secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
           expiresIn: (this.configService.get<string>(

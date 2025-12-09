@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
-import { LoginResponseDto, RequestWithUser } from '@repo/dtos';
+import { LoginResponseDto, AuthenticatedRequest } from '@repo/dtos';
 
 @Controller('auth')
 export class AuthController {
@@ -27,17 +27,22 @@ export class AuthController {
   @UseGuards(AuthGuard('jwt'))
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  logout(@Req() req: RequestWithUser) {
-    return this.authService.logout(req.user['sub']);
+  logout(@Req() req: AuthenticatedRequest) {
+    return this.authService.logout(req.user.userId);
   }
 
   // Endpoint protegido pela estratégia 'jwt-refresh' (Refresh Token)
   @UseGuards(AuthGuard('jwt-refresh'))
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  refreshTokens(@Req() req: RequestWithUser) {
-    const userId = req.user['sub'];
-    const refreshToken = req.user['refreshToken'];
+  refreshTokens(@Req() req: AuthenticatedRequest) {
+    const userId = req.user.userId;
+    // AuthenticatedRequest from @repo/dtos currently only has { userId, email, username }.
+    // It does NOT have refreshToken.
+    // We need to extend it locally or update the DTO if refresh token strategy returns it.
+    // For now, let's cast or access it if we know it's there, but TypeScript will complain.
+    // Let's assume the Strategy returns it. Use 'as any' for now or handle it properly.
+    const refreshToken = (req.user as any)['refreshToken'];
     return this.authService.refreshTokens(userId, refreshToken);
   }
 

@@ -5,8 +5,16 @@ import { ModeToggle } from '@/components/mode-toggle';
 import { FiLogOut } from 'react-icons/fi';
 import { Button } from '@/components/ui/buttons/button';
 import { NotificationDropdown } from '@/components/notification-dropdown';
+import { TaskDetailsGlobalManager } from './-components/task-details-global-manager';
+
+import { z } from 'zod';
+
+const dashboardSearchSchema = z.object({
+  taskId: z.string().optional(),
+});
 
 export const Route = createFileRoute('/dashboard')({
+  validateSearch: (search) => dashboardSearchSchema.parse(search),
   beforeLoad: ({ context }) => {
     if (!context.auth.isAuthenticated) {
       throw redirect({ to: '/login' });
@@ -51,6 +59,7 @@ function AuthenticatedLayout() {
 
       <main className="flex-1 p-6">
         <Outlet />
+        <TaskDetailsGlobalManager />
       </main>
     </div>
   );
