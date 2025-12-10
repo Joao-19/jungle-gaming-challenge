@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
     Table,
     TableBody,
@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { TaskStatus, TaskPriority } from "@repo/dtos";
 import { TaskDetailsDialog } from "./task-details-dialog";
 
+import { useSocketContext } from "@/context/socket-context";
 import { axiosInstance as api } from "@/composables/Services/Http/use-http";
 
 async function fetchTasks(filters: any) {
@@ -61,10 +62,31 @@ export function TasksTable() {
     const [selectedTask, setSelectedTask] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+    const { socket } = useSocketContext();
+    const queryClient = useQueryClient();
+
     const { data, isLoading, refetch } = useQuery({
         queryKey: ["tasks", filters],
         queryFn: () => fetchTasks(filters),
     });
+
+    // Real-time updates
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleTaskUpdate = () => {
+            // Invalidate query to refetch list
+            queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        };
+
+        socket.on("task:created", handleTaskUpdate);
+        socket.on("task:updated", handleTaskUpdate);
+
+        return () => {
+            socket.off("task:created", handleTaskUpdate);
+            socket.off("task:updated", handleTaskUpdate);
+        };
+    }, [socket, queryClient]);
 
     const handleFilterChange = (key: string, value: string) => {
         setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));

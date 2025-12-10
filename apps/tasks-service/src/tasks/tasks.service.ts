@@ -110,7 +110,14 @@ export class TasksService {
       action: 'CREATED',
     });
 
-    this.client.emit('task_created', { ...savedTask, actorId: userId });
+    // Map assignees to IDs for the event payload
+    const assigneeIds = savedTask.assignees?.map((a) => a.userId) || [];
+
+    this.client.emit('task_created', {
+      ...savedTask,
+      assigneeIds, // ✅ Agora explícito para o Notifications Service
+      actorId: userId,
+    });
 
     return savedTask;
   }
