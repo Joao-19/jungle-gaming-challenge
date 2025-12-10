@@ -90,20 +90,24 @@ export class NotificationsGateway
   }
 
   notifyUser(userId: string, payload: any) {
-    const socketId = this.userSockets.get(userId);
-
-    if (socketId) {
-      this.server.to(socketId).emit('notification', payload);
-      this.logger.info({ userId }, 'Notification sent via WebSocket');
-    } else {
-      this.logger.debug({ userId }, 'User not connected to WebSocket');
-    }
+    this.emitToUser(userId, 'notification', payload);
   }
 
   notifyUsers(userIds: string[], payload: any) {
     userIds.forEach((userId) => {
       this.notifyUser(userId, payload);
     });
+  }
+
+  emitToUser(userId: string, event: string, payload: any) {
+    const socketId = this.userSockets.get(userId);
+
+    if (socketId) {
+      this.server.to(socketId).emit(event, payload);
+      this.logger.info({ userId, event }, 'Event sent via WebSocket');
+    } else {
+      this.logger.debug({ userId, event }, 'User not connected to WebSocket');
+    }
   }
 
   @SubscribeMessage('mark_as_read_by_task')

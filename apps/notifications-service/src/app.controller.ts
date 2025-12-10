@@ -48,12 +48,16 @@ export class AppController {
     const recipients = uniqueCandidates.filter((id) => id !== data.actorId);
 
     for (const userId of recipients) {
+      // 1. Send Notification (Persisted)
       await this.appService.create({
         userId,
         title: `Nova tarefa criada: ${data.title}`,
         type: 'TASK_CREATED',
         metadata: { taskId: data.id },
       });
+
+      // 2. Send Real-time Event (Ephemeral for List Update)
+      this.appService.emitEvent(userId, 'task:created', data);
     }
   }
 
@@ -63,16 +67,31 @@ export class AppController {
     const shouldNotify =
       changes.includes('STATUS') || changes.includes('ASSIGNEES');
 
+    // Always emit update event for real-time list, even if no notification?
+    // User requested: "update list". List should update on ANY update.
+    // But recipients logic below depends on `shouldNotify` scope?
+    // Actually, `shouldNotify` filters what is worth a *Notification*.
+    // But for list update, maybe we want everything.
+    // However, sticking to the current recipients logic is safe.
+
+    // Recalculate recipients regardless of notification?
+    const candidates = [data.userId, ...(data.assigneeIds || [])];
+    const uniqueCandidates = [...new Set(candidates)];
+    const recipients = uniqueCandidates.filter((id) => id !== data.actorId);
+
+    // If just small update (title), maybe we should also emit?
+    // Let's emit 'task:updated' to all associated users.
+
+    for (const userId of recipients) {
+      // Send Real-time Event FIRST (fast)
+      this.appService.emitEvent(userId, 'task:updated', data);
+    }
+
     if (!shouldNotify) {
       return;
     }
 
-    const candidates = [data.userId, ...(data.assigneeIds || [])];
-    const uniqueCandidates = [...new Set(candidates)];
-
-    // Exclude Actor
-    const recipients = uniqueCandidates.filter((id) => id !== data.actorId);
-
+    // Send Notification
     for (const userId of recipients) {
       await this.appService.create({
         userId,

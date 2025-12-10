@@ -765,15 +765,43 @@ pnpm --filter "*-service" test:cov
 
 ---
 
-## 🐛 Problemas Conhecidos
+## 🐛 Problemas Conhecidos & Dívida Técnica
 
-### 1. Frontend Error Boundary
+### 1. TasksService: Falta de Transações (Atomicidade) ⚠️
 
-**Status:** ⚠️ Básico
+**Status:** Pendente
 
-**Problema:** Erros não tratados podem quebrar a UI
+**Problema:** Métodos `create` e `update` salvam múltiplas entidades (Task, History, Assignees) sem transação.
 
-**Solução futura:** Implementar Error Boundary do React
+**Risco:** Se o banco falhar no meio da operação, pode gerar dados inconsistentes (ex: Task criada sem histórico).
+
+**Solução:** Envolver operações no `manager.transaction`.
+
+### 2. TasksService: Race Condition em Assignees 🤔
+
+**Status:** Pendente
+
+**Problema:** Atualização de assignees faz `delete` total seguido de `insert`.
+
+**Risco:** Em alta concorrência, dois updates simultâneos podem conflitar, com um apagando o trabalho do outro.
+
+**Solução:** Implementar "upsert" ou diff inteligente de assignees.
+
+### 3. NotificationsService: Loop Sequencial (Performance) 🐌
+
+**Status:** Pendente
+
+**Problema:** O `AppController` itera sobre recipientes usando `for...of` com `await`.
+
+**Risco:** Latência aumenta linearmente com número de usuários. Se notificar 100 usuários, o 100º espera muito.
+
+**Solução:** Usar `Promise.all` para paralelismo.
+
+### 4. Frontend Error Boundary
+
+**Status:** ✅ Resolvido
+
+**Solução:** Implementado `GlobalErrorComponent` e `RootErrorBoundary`.
 
 ---
 
