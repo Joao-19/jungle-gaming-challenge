@@ -8,6 +8,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Inject, forwardRef } from '@nestjs/common';
+import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import { AppService } from './app.service';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
@@ -27,6 +28,8 @@ export class NotificationsGateway
   private userSockets = new Map<string, string>();
 
   constructor(
+    @InjectPinoLogger(NotificationsGateway.name)
+    private readonly logger: PinoLogger,
     private readonly jwtService: JwtService,
     @Inject(forwardRef(() => AppService))
     private readonly appService: AppService,
@@ -38,7 +41,7 @@ export class NotificationsGateway
       client.handshake.auth.token || client.handshake.headers.authorization;
 
     if (!token) {
-      console.log(`⚠️  Client ${client.id} tried to connect without token`);
+      this.logger.warn(`Client ${client.id} tried to connect without token`);
       client.disconnect();
       return;
     }
@@ -54,20 +57,22 @@ export class NotificationsGateway
       const userId = payload.sub;
       const origin = client.handshake.headers.origin;
 
-      console.log('CONEXAO AUTHENTICADA', { userId });
-
-      console.log(`🔌 WebSocket connection from origin: ${origin}`);
-      console.log(
-        `📋 CORS_ORIGIN expected: ${process.env.CORS_ORIGIN || 'http://localhost:5173'}`,
+      this.logger.info({ userId }, 'Authenticated WebSocket connection');
+      this.logger.debug(
+        {
+          origin,
+          expectedOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+        },
+        'WebSocket origin check',
       );
 
       this.userSockets.set(userId, client.id);
       client.data.userId = userId; // Store for easy access in handlers
-      console.log(`✅ Connected Client: ${client.id} (User: ${userId})`);
+      this.logger.info({ clientId: client.id, userId }, 'Client connected');
     } catch (error) {
-      console.error(
-        `❌ Client ${client.id} failed authentication:`,
-        error.message,
+      this.logger.error(
+        { clientId: client.id, error: error.message },
+        'Client authentication failed',
       );
       client.disconnect();
     }
@@ -80,7 +85,7 @@ export class NotificationsGateway
 
     if (userId) {
       this.userSockets.delete(userId);
-      console.log(`Disconnected Client: ${client.id}`);
+      this.logger.info({ clientId: client.id, userId }, 'Client disconnected');
     }
   }
 
@@ -89,9 +94,9 @@ export class NotificationsGateway
 
     if (socketId) {
       this.server.to(socketId).emit('notification', payload);
-      console.log(`Notification sent via WebSocket to user ${userId}`);
+      this.logger.info({ userId }, 'Notification sent via WebSocket');
     } else {
-      console.log(`User ${userId} is not connected to WebSocket now.`);
+      this.logger.debug({ userId }, 'User not connected to WebSocket');
     }
   }
 
@@ -108,17 +113,18 @@ export class NotificationsGateway
   ) {
     const userId = client.data.userId;
     if (!userId) {
-      console.log('Ignore mark_as_read: No userId in socket');
+      this.logger.warn('Ignore mark_as_read: No userId in socket');
       return;
     }
 
     if (!data.taskId) {
-      console.log('Ignore mark_as_read: No taskId in payload');
+      this.logger.warn('Ignore mark_as_read: No taskId in payload');
       return;
     }
 
-    console.log(
-      `Received mark_as_read_by_task for Task: ${data.taskId} from User: ${userId}`,
+    this.logger.info(
+      { taskId: data.taskId, userId },
+      'Received mark_as_read_by_task',
     );
     await this.appService.markAsReadByTaskId(userId, data.taskId);
   }

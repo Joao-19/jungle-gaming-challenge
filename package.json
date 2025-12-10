@@ -10,7 +10,9 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "test": "pnpm -r run test",
+    "test:e2e": "pnpm -r run test:e2e"
   },
   "devDependencies": {
     "turbo": "latest",

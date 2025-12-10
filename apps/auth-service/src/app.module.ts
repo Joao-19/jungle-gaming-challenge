@@ -3,6 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { LoggerModule } from 'nestjs-pino';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 
@@ -11,6 +12,17 @@ import { AuthModule } from './auth/auth.module';
     // 1. Configura o leitor de .env
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    // Logger estruturado com Pino
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { colorize: true } }
+            : undefined,
+        level: process.env.LOG_LEVEL || 'info',
+        customProps: () => ({ service: 'auth-service' }),
+      },
     }),
 
     // 2. Configura a conexão com o Banco

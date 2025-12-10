@@ -1,11 +1,25 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { MailerModule } from "@nestjs-modules/mailer";
 import { HandlebarsAdapter } from "@nestjs-modules/mailer/dist/adapters/handlebars.adapter";
+import { LoggerModule } from "nestjs-pino";
 import { join } from "path";
 import { AppController } from "./app.controller";
 
 @Module({
   imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    // Logger estruturado com Pino
+    LoggerModule.forRoot({
+      pinoHttp: {
+        transport:
+          process.env.NODE_ENV !== "production"
+            ? { target: "pino-pretty", options: { colorize: true } }
+            : undefined,
+        level: process.env.LOG_LEVEL || "info",
+        customProps: () => ({ service: "email-service" }),
+      },
+    }),
     MailerModule.forRoot({
       transport: {
         host: process.env.SMTP_HOST,

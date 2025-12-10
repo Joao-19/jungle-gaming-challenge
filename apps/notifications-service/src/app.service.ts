@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, Not } from 'typeorm';
+import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import { Notification } from './entities/notification.entity';
 import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
 export class AppService {
   constructor(
+    @InjectPinoLogger(AppService.name)
+    private readonly logger: PinoLogger,
     @InjectRepository(Notification)
     private notificationsRepository: Repository<Notification>,
     private notificationsGateway: NotificationsGateway,
@@ -27,7 +30,7 @@ export class AppService {
   }
 
   async findAll(userId: string) {
-    console.log('NOTIFICATIONS SERVICE - findAll userId:', userId);
+    this.logger.debug({ userId }, 'Finding all notifications');
     const pending = await this.notificationsRepository.find({
       where: { userId, readAt: IsNull() },
       order: { createdAt: 'DESC' },
@@ -50,7 +53,7 @@ export class AppService {
   }
 
   async markAsReadByTaskId(userId: string, taskId: string) {
-    console.log(`MARK AS READ BY TASK ID: userId=${userId}, taskId=${taskId}`);
+    this.logger.info({ userId, taskId }, 'Mark as read by task ID');
 
     // Safer approach: Find pending notifications for this task, then update them.
     const notifications = await this.notificationsRepository
@@ -65,8 +68,9 @@ export class AppService {
       await this.notificationsRepository.update(ids, {
         readAt: new Date(),
       });
-      console.log(
-        `Marked ${ids.length} notifications as read for task ${taskId}`,
+      this.logger.info(
+        { count: ids.length, taskId },
+        'Marked notifications as read',
       );
     }
 

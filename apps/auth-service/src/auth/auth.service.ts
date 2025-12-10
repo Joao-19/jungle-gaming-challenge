@@ -80,11 +80,12 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
   }
 
   async getTokens(userId: string, email: string) {
+    const jwtSecret = this.configService.get<string>('JWT_SECRET');
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(
         { sub: userId, email },
         {
-          secret: this.configService.get<string>('JWT_SECRET'),
+          secret: jwtSecret,
           expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ||
             '15m') as any,
         },

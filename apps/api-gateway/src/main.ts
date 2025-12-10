@@ -4,10 +4,14 @@ import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ThrottlerExceptionFilter } from './filters/throttler-exception.filter';
+import { Logger } from 'nestjs-pino';
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  const logger = app.get(Logger);
+  app.useLogger(logger);
+
   const configService = app.get(ConfigService);
   const corsOrigin =
     configService.get<string>('CORS_ORIGIN') || 'http://localhost:5173';
@@ -52,9 +56,9 @@ async function bootstrap() {
   //
 
   await app.listen(port);
-  console.log(
-    `✅ Gateway running on port ${port} allowing CORS from: ${corsOrigin}`,
+  logger.log(
+    `Gateway running on port ${port} allowing CORS from: ${corsOrigin}`,
   );
-  console.log(`🛡️  Security headers enabled (Helmet)`);
+  logger.log('Security headers enabled (Helmet)');
 }
 bootstrap();

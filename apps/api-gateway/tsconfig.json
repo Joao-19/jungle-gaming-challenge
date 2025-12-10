@@ -21,11 +21,12 @@
     "noImplicitAny": true,
     "strictBindCallApply": true,
     "noFallthroughCasesInSwitch": true,
+    "types": ["node", "jest"],
     "paths": {
       "@repo/dtos": ["../../packages/dtos/src/index.ts"],
       "@repo/dtos/*": ["../../packages/dtos/src/*"]
     }
   },
   "ignoreDeprecations": "6.0",
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "test/**/*"]
 }
