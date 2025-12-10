@@ -713,7 +713,7 @@ pnpm --filter "*-service" test:cov
 
 ### Testes Implementados
 
-**Auth Service (11 testes):**
+**Auth Service (11 testes unitários):**
 
 - ✅ Login com credenciais válidas/inválidas
 - ✅ Geração de tokens (access + refresh)
@@ -721,7 +721,7 @@ pnpm --filter "*-service" test:cov
 - ✅ Logout
 - ✅ Forgot/Reset password
 
-**Tasks Service (15 testes):**
+**Tasks Service (15 testes unitários):**
 
 - ✅ CRUD completo de tarefas
 - ✅ Autorização (owner vs assignee)
@@ -729,32 +729,45 @@ pnpm --filter "*-service" test:cov
 - ✅ Comentários e histórico
 - ✅ Notificações assíncronas
 
+**API Gateway E2E (14 testes):**
+
+- ✅ Auth: register, login, refresh, logout, forgot/reset password
+- ✅ Tasks: CRUD completo, comentários, histórico
+- ✅ Validação de autenticação JWT
+
 **JWT Strategy (3 testes):**
 
 - ✅ Validação de payload
 - ✅ Extração de claims
 
+### Testes E2E — Trade-offs
+
+> Os testes E2E utilizam **mocks** ao invés de banco de dados real.
+
+**✅ Vantagens:**
+
+- Execução rápida (~50ms vs 5s+ com banco real)
+- Independente de infraestrutura (não precisa `docker-compose up`)
+- Testes determinísticos (sem dados residuais)
+- Ideal para CI/CD (GitHub Actions)
+
+**⚠️ Limitações:**
+
+- Não testa integração real com microserviços
+- Não valida queries SQL ou migrations
+- Erros de comunicação HTTP não são detectados
+
+**📌 Quando usar banco real:**
+
+- Testes de regressão pré-deploy
+- Validação de migrations
+- Debug de problemas de integração
+
 ---
 
 ## 🐛 Problemas Conhecidos
 
-### 1. Logging Estruturado
-
-**Status:** ⚠️ Básico (console.log)
-
-**Problema:** Logs não são estruturados nem persistidos
-
-**Solução futura:** Implementar Winston ou Pino com níveis de log
-
-### 2. Testes E2E
-
-**Status:** ❌ Não implementado
-
-**Problema:** Apenas testes unitários foram criados
-
-**Solução futura:** Adicionar testes E2E com Supertest para controllers
-
-### 3. Frontend Error Boundary
+### 1. Frontend Error Boundary
 
 **Status:** ⚠️ Básico
 
@@ -769,8 +782,8 @@ pnpm --filter "*-service" test:cov
 ### Curto Prazo (1-2 semanas)
 
 - [x] Implementar migrations TypeORM ✅
-- [ ] Adicionar logging estruturado (Winston)
-- [ ] Testes E2E dos controllers
+- [x] Logging estruturado com Pino ✅
+- [x] Testes E2E com mocks ✅
 - [ ] Skeleton loaders no frontend
 - [ ] Upload de anexos em tarefas
 

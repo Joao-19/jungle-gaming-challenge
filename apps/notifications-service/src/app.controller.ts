@@ -7,6 +7,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
+import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { AppService } from './app.service';
@@ -31,7 +32,11 @@ import {
  */
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
+  constructor(
+    @InjectPinoLogger(AppController.name)
+    private readonly logger: PinoLogger,
+    private readonly appService: AppService,
+  ) {}
 
   @EventPattern('task_created')
   async handleTaskCreated(@Payload() data: TaskCreatedEventDto) {
@@ -100,7 +105,7 @@ export class AppController {
   @Get('notifications')
   @UseGuards(AuthGuard('jwt')) // JWT guard ONLY on HTTP endpoint
   getNotifications(@Query('userId') userId: string) {
-    console.log('NOTIFICATIONS CONTROLLER - userId:', userId);
+    this.logger.debug({ userId }, 'Getting notifications');
     return this.appService.findAll(userId);
   }
 

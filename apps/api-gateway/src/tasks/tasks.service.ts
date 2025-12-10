@@ -2,6 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
+import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 
 import { UsersService } from '../users/users.service';
 
@@ -10,6 +11,8 @@ export class TasksService {
   private tasksServiceUrl: string;
 
   constructor(
+    @InjectPinoLogger(TasksService.name)
+    private readonly logger: PinoLogger,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
     private readonly usersService: UsersService,
@@ -28,6 +31,7 @@ export class TasksService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error({ error: error.message }, 'Create task failed');
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,
@@ -45,6 +49,7 @@ export class TasksService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error({ error: error.message }, 'Find all tasks failed');
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,
@@ -61,6 +66,10 @@ export class TasksService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error(
+        { error: error.message, taskId: id },
+        'Find one task failed',
+      );
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,
@@ -72,7 +81,7 @@ export class TasksService {
     try {
       const payload = { ...data, userId };
 
-      console.log(payload);
+      this.logger.debug({ taskId: id, payload }, 'Updating task');
       const response = await lastValueFrom(
         this.httpService.patch(`${this.tasksServiceUrl}/tasks/${id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
@@ -80,6 +89,10 @@ export class TasksService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error(
+        { error: error.message, taskId: id },
+        'Update task failed',
+      );
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,
@@ -97,6 +110,10 @@ export class TasksService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error(
+        { error: error.message, taskId: id },
+        'Remove task failed',
+      );
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,
@@ -129,6 +146,10 @@ export class TasksService {
         data: enrichedHistory,
       };
     } catch (error) {
+      this.logger.error(
+        { error: error.message, taskId: id },
+        'Get history failed',
+      );
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,
@@ -147,6 +168,10 @@ export class TasksService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error(
+        { error: error.message, taskId: id },
+        'Add comment failed',
+      );
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',
         error.response?.status || 500,
@@ -179,7 +204,10 @@ export class TasksService {
         data: enrichedComments,
       };
     } catch (error) {
-      console.log(error);
+      this.logger.error(
+        { error: error.message, taskId: id },
+        'Get comments failed',
+      );
 
       throw new HttpException(
         error.response?.data || 'Erro no Tasks Service',

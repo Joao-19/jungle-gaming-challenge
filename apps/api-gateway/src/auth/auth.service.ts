@@ -2,6 +2,7 @@ import { Injectable, HttpException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { lastValueFrom } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
+import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import {
   CreateUserDto,
   LoginDto,
@@ -14,6 +15,8 @@ export class AuthService {
   private AUTH_SERVICE_URL: string;
 
   constructor(
+    @InjectPinoLogger(AuthService.name)
+    private readonly logger: PinoLogger,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
   ) {
@@ -34,7 +37,7 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
-      console.log(error);
+      this.logger.error({ error: error.message }, 'Login failed');
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,
@@ -52,6 +55,7 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error({ error: error.message }, 'Registration failed');
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,
@@ -74,7 +78,7 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
-      console.log(error);
+      this.logger.error({ error: error.message }, 'Token refresh failed');
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,
@@ -91,7 +95,7 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
-      console.log(error);
+      this.logger.error({ error: error.message, userId }, 'Logout failed');
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,
@@ -108,7 +112,7 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
-      console.log(error);
+      this.logger.error({ error: error.message }, 'Forgot password failed');
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,
@@ -129,6 +133,7 @@ export class AuthService {
       );
       return response.data;
     } catch (error) {
+      this.logger.error({ error: error.message }, 'Reset password failed');
       throw new HttpException(
         error.response?.data || 'Erro ao conectar no Auth Service',
         error.response?.status || 500,
