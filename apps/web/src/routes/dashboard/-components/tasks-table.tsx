@@ -25,7 +25,7 @@ import { TaskDetailsDialog } from "./task-details-dialog";
 
 import { useSocketContext } from "@/context/socket-context";
 import { axiosInstance as api } from "@/composables/Services/Http/use-http";
-import type { GetTasksFilterDto, TaskResponseDto } from "@repo/dtos";
+import type { TaskResponseDto } from "@repo/dtos";
 
 async function fetchTasks(filters: any) {
     const params = new URLSearchParams();
