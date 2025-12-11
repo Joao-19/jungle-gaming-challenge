@@ -34,7 +34,7 @@ interface HistoryItem {
 
 type ActivityItem = HistoryItem | CommentItem;
 
-async function fetchHistory({ pageParam = 1, queryKey }: any) {
+async function fetchHistory({ pageParam = 1, queryKey }: { pageParam?: number; queryKey: string[] }) {
     const [_key, taskId] = queryKey;
     const response = await api.get(`/tasks/${taskId}/history`, {
         params: {

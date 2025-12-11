@@ -125,7 +125,10 @@ function LoginPage() {
 // Login Form Component
 // ============================================
 
-function LoginForm({ login, toast }: { login: any; toast: any }) {
+function LoginForm({ login, toast }: {
+  login: (accessToken: string, refreshToken: string, userId: string) => void;
+  toast: ReturnType<typeof useToast>['toast'];
+}) {
   const {
     register,
     handleSubmit,
@@ -200,7 +203,10 @@ function LoginForm({ login, toast }: { login: any; toast: any }) {
 // Register Form Component
 // ============================================
 
-function RegisterForm({ toast, onSuccess }: { toast: any; onSuccess: () => void }) {
+function RegisterForm({ toast, onSuccess }: {
+  toast: ReturnType<typeof useToast>['toast'];
+  onSuccess: () => void;
+}) {
   const {
     register,
     handleSubmit,

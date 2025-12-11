@@ -75,7 +75,7 @@ export interface ApiError {
   message: string;
   response?: {
     status: number;
-    data: any;
+    data: unknown;
   };
 }
 

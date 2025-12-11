@@ -25,8 +25,9 @@ import { TaskDetailsDialog } from "./task-details-dialog";
 
 import { useSocketContext } from "@/context/socket-context";
 import { axiosInstance as api } from "@/composables/Services/Http/use-http";
+import type { GetTasksFilterDto, TaskResponseDto } from "@repo/dtos";
 
-async function fetchTasks(filters: any) {
+async function fetchTasks(filters: Partial<GetTasksFilterDto & { title?: string }>) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, String(value));
@@ -51,7 +52,13 @@ const priorityTranslation: Record<string, string> = {
 };
 
 export function TasksTable() {
-    const [filters, setFilters] = useState({
+    const [filters, setFilters] = useState<{
+        title: string;
+        status: string;
+        priority: string;
+        page: number;
+        limit: number;
+    }>({
         title: "",
         status: "",
         priority: "",
@@ -59,7 +66,7 @@ export function TasksTable() {
         limit: 10,
     });
 
-    const [selectedTask, setSelectedTask] = useState<any>(null);
+    const [selectedTask, setSelectedTask] = useState<TaskResponseDto | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
 
     const { socket } = useSocketContext();
@@ -92,7 +99,7 @@ export function TasksTable() {
         setFilters((prev) => ({ ...prev, [key]: value, page: 1 }));
     };
 
-    const handleEditClick = (task: any) => {
+    const handleEditClick = (task: TaskResponseDto) => {
         setSelectedTask(task);
         setIsDialogOpen(true);
     };
@@ -171,7 +178,7 @@ export function TasksTable() {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            tasks.map((task: any) => (
+                            tasks.map((task: TaskResponseDto) => (
                                 <TableRow
                                     key={task.id}
                                     className="cursor-pointer hover:bg-muted/50"

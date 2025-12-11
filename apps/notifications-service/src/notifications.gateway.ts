@@ -12,6 +12,7 @@ import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import { AppService } from './app.service';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
+import type { NotificationPayload, EventPayload } from './types';
 
 @WebSocketGateway({
   cors: {
@@ -89,17 +90,17 @@ export class NotificationsGateway
     }
   }
 
-  notifyUser(userId: string, payload: any) {
+  notifyUser(userId: string, payload: NotificationPayload) {
     this.emitToUser(userId, 'notification', payload);
   }
 
-  notifyUsers(userIds: string[], payload: any) {
+  notifyUsers(userIds: string[], payload: NotificationPayload) {
     userIds.forEach((userId) => {
       this.notifyUser(userId, payload);
     });
   }
 
-  emitToUser(userId: string, event: string, payload: any) {
+  emitToUser(userId: string, event: string, payload: EventPayload) {
     const socketId = this.userSockets.get(userId);
 
     if (socketId) {

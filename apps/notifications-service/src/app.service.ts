@@ -4,6 +4,7 @@ import { Repository, IsNull, Not } from 'typeorm';
 import { PinoLogger, InjectPinoLogger } from 'nestjs-pino';
 import { Notification } from './entities/notification.entity';
 import { NotificationsGateway } from './notifications.gateway';
+import type { EventPayload } from './types';
 
 @Injectable()
 export class AppService {
@@ -78,7 +79,7 @@ export class AppService {
     return { success: true, count: notifications.length };
   }
 
-  emitEvent(userId: string, event: string, payload: any) {
+  emitEvent(userId: string, event: string, payload: EventPayload) {
     this.notificationsGateway.emitToUser(userId, event, payload);
   }
 }

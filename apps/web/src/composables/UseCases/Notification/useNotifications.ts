@@ -11,7 +11,7 @@ export interface Notification {
   title: string;
   content?: string;
   type: string;
-  metadata?: any;
+  metadata?: unknown;
   readAt?: string;
   createdAt: string;
 }
