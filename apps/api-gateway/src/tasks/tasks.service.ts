@@ -166,7 +166,15 @@ export class TasksService {
           { headers: { Authorization: `Bearer ${token}` } },
         ),
       );
-      return response.data;
+
+      // Enrich the comment with user data before returning
+      const comment = response.data;
+      const user = await this.usersService.findOne(comment.userId);
+
+      return {
+        ...comment,
+        user: user ? { username: user.username } : null,
+      };
     } catch (error) {
       this.logger.error(
         { error: error.message, taskId: id },

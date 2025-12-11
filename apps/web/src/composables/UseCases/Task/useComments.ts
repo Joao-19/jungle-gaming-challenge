@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { axiosInstance as api } from "@/composables/Services/Http/use-http";
 import { useSocket } from "@/composables/Services/websocket/useSocket";
+import { useUserCache } from "@/composables/UseCases/User/useUserCache";
 import { useEffect } from "react";
 
 interface User {
@@ -44,10 +45,11 @@ interface CommentsResponse {
 
 function useComments({ taskId, limit = 5 }: UseCommentsProps) {
   const Events = {
-    COMMENT: "notification",
+    COMMENT: "comment:added",
   };
 
   const queryClient = useQueryClient();
+  const { fetchUser } = useUserCache();
 
   const {
     data: commentsData,
@@ -118,6 +120,34 @@ function useComments({ taskId, limit = 5 }: UseCommentsProps) {
           };
         }
       );
+
+      // Enrich comment with user data if not already present
+      if (!data.user && data.userId) {
+        fetchUser(data.userId).then((user) => {
+          if (user) {
+            queryClient.setQueryData<InfiniteData<CommentsResponse>>(
+              ["task-comments", taskId],
+              (oldData) => {
+                if (!oldData) return undefined;
+
+                const newPages = oldData.pages.map((page) => ({
+                  ...page,
+                  data: page.data.map((comment) =>
+                    comment.id === data.id
+                      ? { ...comment, user: { username: user.username } }
+                      : comment
+                  ),
+                }));
+
+                return {
+                  ...oldData,
+                  pages: newPages,
+                };
+              }
+            );
+          }
+        });
+      }
     }
   }
 

@@ -17,6 +17,12 @@ class CommentDataDto {
   @IsString()
   @IsNotEmpty()
   userId: string;
+
+  @ApiProperty({
+    description: "Username of the comment author",
+    required: false,
+  })
+  username?: string;
 }
 
 export class CommentAddedEventDto {
