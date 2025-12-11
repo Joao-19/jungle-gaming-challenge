@@ -108,7 +108,7 @@ export class AuthService {
           `${this.AUTH_SERVICE_URL}/auth/logout`,
           {},
           {
-            headers: { Authorization: token },
+            headers: { Authorization: `Bearer ${token}` },
           },
         ),
       );

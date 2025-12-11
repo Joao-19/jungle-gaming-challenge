@@ -1,11 +1,4 @@
-import {
-  Body,
-  Controller,
-  Post,
-  UseGuards,
-  Request,
-  Headers,
-} from '@nestjs/common';
+import { Body, Controller, Post, UseGuards, Headers } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
@@ -17,7 +10,6 @@ import {
   RefreshTokenDto,
 } from '@repo/dtos';
 import { AuthGuard } from '@nestjs/passport';
-import type { AuthenticatedRequest } from '@repo/dtos';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -86,10 +78,8 @@ export class AuthController {
     status: 200,
     description: 'Logout realizado com sucesso',
   })
-  logout(
-    @Request() req: AuthenticatedRequest,
-    @Headers('authorization') token: string,
-  ): Promise<{ message: string }> {
+  logout(@Headers('authorization') auth: string): Promise<{ message: string }> {
+    const token = auth?.replace('Bearer ', '');
     // SECURITY: Forward the token to auth-service so it can validate and perform logout
     return this.authService.logout(token);
   }
