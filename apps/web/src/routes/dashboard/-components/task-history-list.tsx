@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2, Send } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import useComments, { type CommentItem } from "@/composables/UseCases/Task/useComments";
+import { useAuth } from "@/context/auth-context";
 
 
 interface TaskHistoryListProps {
@@ -48,6 +49,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [commentText, setCommentText] = useState("");
     const [isSending, setIsSending] = useState(false);
+    const { userId: currentUserId } = useAuth();
 
 
     // Fetch History (Infinite)
@@ -166,7 +168,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
                                 <div className="flex flex-col pb-2 opacity-70">
                                     <div className="flex items-center gap-2">
                                         <span className="font-semibold text-xs">
-                                            {item.user?.username || "Sistema"}
+                                            {item.userId === currentUserId ? "Você" : (item.user?.username || "Sistema")}
                                         </span>
                                         <span className="text-xs text-muted-foreground">
                                             {formatDistanceToNow(new Date(item.createdAt), {
@@ -183,7 +185,7 @@ export function TaskHistoryList({ taskId }: TaskHistoryListProps) {
                                 <div className="flex flex-col pb-2">
                                     <div className="flex items-center gap-2">
                                         <span className="font-bold text-xs text-primary">
-                                            {item.user?.username || "Usuário"}
+                                            {item.userId === currentUserId ? "Você" : (item.user?.username || "Usuário")}
                                         </span>
                                         <span className="text-xs text-muted-foreground">
                                             {formatDistanceToNow(new Date(item.createdAt), {

@@ -61,7 +61,7 @@ export class TasksService {
     // Emit event for real-time updates with task title
     this.client.emit('comment_added', {
       comment: savedComment,
-      taskTitle: task.title, // ✅ Adiciona o título da task
+      taskTitle: task.title,
       taskId: task.id,
       recipients,
     });

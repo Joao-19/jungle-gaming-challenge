@@ -105,12 +105,20 @@ export class AppController {
 
   @EventPattern('comment_added')
   async handleCommentAdded(@Payload() data: CommentAddedEventDto) {
-    const { taskTitle, taskId, recipients } = data;
+    const { taskTitle, taskId, recipients, comment } = data;
     if (!recipients || recipients.length === 0) {
       return;
     }
 
     for (const userId of recipients) {
+      // 1. Send Real-time Comment Event (for immediate UI update)
+      this.appService.emitEvent(userId, 'comment:added', {
+        ...comment,
+        taskId,
+        type: 'COMMENT',
+      });
+
+      // 2. Send Notification (Persisted)
       await this.appService.create({
         userId,
         title: `${taskTitle} tem um comentário!`,
