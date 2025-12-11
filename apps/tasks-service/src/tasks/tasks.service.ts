@@ -1,4 +1,9 @@
-import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 import {
   CreateTaskDto,
@@ -38,7 +43,7 @@ export class TasksService {
       relations: ['assignees'],
     });
     if (!task) {
-      throw new Error('Task not found');
+      throw new NotFoundException('Task not found');
     }
 
     const comment = this.commentsRepository.create({
@@ -207,7 +212,7 @@ export class TasksService {
       relations: ['assignees'],
     });
     if (!task) {
-      throw new Error('Task not found');
+      throw new NotFoundException('Task not found');
     }
 
     // Allow Owner OR Assignee to update
@@ -333,7 +338,7 @@ export class TasksService {
   async remove(id: string, userId: string) {
     const task = await this.tasksRepository.findOne({ where: { id } });
     if (!task) {
-      throw new Error('Task not found');
+      throw new NotFoundException('Task not found');
     }
 
     if (task.userId !== userId) {
