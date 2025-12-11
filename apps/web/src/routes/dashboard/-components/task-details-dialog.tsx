@@ -28,20 +28,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/composables/UI/use-toast';
 import { useAuth } from '@/context/auth-context';
 import { useSocket } from '@/composables/Services/websocket/useSocket';
-
-interface Task {
-    id: string;
-    title: string;
-    description?: string;
-    status: TaskStatus;
-    priority: TaskPriority;
-    dueDate?: string;
-    assigneeIds?: string[];
-    userId: string;
-}
+import type { TaskResponseDto } from '@repo/dtos';
 
 interface TaskDetailsDialogProps {
-    task: Task | null;
+    task: TaskResponseDto | null;
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onUpdate?: () => void;
@@ -108,7 +98,7 @@ export function TaskDetailsDialog({
                 description: task.description,
                 priority: task.priority,
                 status: task.status,
-                dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+                dueDate: task.dueDate ? String(task.dueDate).split('T')[0] : '',
                 assigneeIds: task.assigneeIds || [],
             });
         }
