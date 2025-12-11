@@ -1,8 +1,9 @@
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { JwtPayload } from '../../types';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
@@ -17,11 +18,15 @@ export class RefreshTokenStrategy extends PassportStrategy(
     });
   }
 
-  validate(req: Request, payload: any) {
-    const refreshToken = req.get('Authorization').replace('Bearer', '').trim();
+  validate(req: Request, payload: JwtPayload) {
+    const authHeader = req.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header missing');
+    }
+    const refreshToken = authHeader.replace('Bearer', '').trim();
     return {
       ...payload,
-      userId: payload.sub,
+      sub: payload.sub,
       refreshToken,
     };
   }

@@ -15,6 +15,7 @@ import {
 import { ClientProxy } from '@nestjs/microservices';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
+import type { LoginDto } from '@repo/dtos';
 import { UserResponseDto, LoginResponseDto } from '@repo/dtos';
 
 @Injectable()
@@ -34,7 +35,7 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
     await this.emailClient.close();
   }
 
-  async login(user: any): Promise<LoginResponseDto> {
+  async login(user: LoginDto): Promise<LoginResponseDto> {
     const validUser = await this.usersService.validateUser(
       user.email,
       user.password,
@@ -81,24 +82,20 @@ export class AuthService implements OnModuleInit, OnModuleDestroy {
 
   async getTokens(userId: string, email: string) {
     const jwtSecret = this.configService.get<string>('JWT_SECRET');
+    const jwtExpiresIn =
+      this.configService.get<string>('JWT_EXPIRES_IN') || '15m';
+    const refreshExpiresIn =
+      this.configService.get<string>('JWT_REFRESH_EXPIRES_IN') || '7d';
+
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        { sub: userId, email },
-        {
-          secret: jwtSecret,
-          expiresIn: (this.configService.get<string>('JWT_EXPIRES_IN') ||
-            '15m') as any,
-        },
-      ),
-      this.jwtService.signAsync(
-        { sub: userId, email },
-        {
-          secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
-          expiresIn: (this.configService.get<string>(
-            'JWT_REFRESH_EXPIRES_IN',
-          ) || '7d') as any,
-        },
-      ),
+      this.jwtService.signAsync({ sub: userId, email }, {
+        secret: jwtSecret,
+        expiresIn: jwtExpiresIn,
+      } as Parameters<typeof this.jwtService.signAsync>[1]),
+      this.jwtService.signAsync({ sub: userId, email }, {
+        secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
+        expiresIn: refreshExpiresIn,
+      } as Parameters<typeof this.jwtService.signAsync>[1]),
     ]);
 
     return {

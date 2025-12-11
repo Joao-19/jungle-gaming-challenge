@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { ConflictException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, FindOptionsWhere } from 'typeorm';
 import { CreateUserDto, UserResponseDto, UserQueryDto } from '@repo/dtos';
 import { User } from './entities/user.entity';
 
@@ -38,7 +38,7 @@ export class UsersService {
     const { page = 1, limit = 10, search } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = [];
+    const where: FindOptionsWhere<User>[] = [];
     if (search) {
       where.push({ username: Like(`%${search}%`) });
       where.push({ email: Like(`%${search}%`) });
