@@ -1,8 +1,6 @@
 # 🚀 Sistema de Gestão de Tarefas Colaborativo
 
-> Desafio Full-stack Júnior - Jungle Gaming
-
-Sistema completo de gerenciamento de tarefas com suporte a múltiplos usuários, notificações em tempo real, comentários e histórico de alterações, construído com arquitetura de microserviços.
+| Sistema completo de gerenciamento de tarefas com suporte a múltiplos usuários, notificações em tempo real, comentários e histórico de alterações, construído com arquitetura de microserviços.
 
 [![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)]()
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)]()
